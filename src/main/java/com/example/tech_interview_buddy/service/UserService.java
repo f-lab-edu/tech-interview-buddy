@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import com.example.tech_interview_buddy.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import com.example.tech_interview_buddy.dto.request.UserCreateRequest;
+import com.example.tech_interview_buddy.dto.request.UserLoginRequest;
 import com.example.tech_interview_buddy.domain.User;
 
 @Service
@@ -29,6 +30,19 @@ public class UserService {
         // 사용자 저장
         User savedUser = userRepository.save(user);
         return savedUser.getId();
+    }
+
+    public User login(UserLoginRequest userLoginRequest) {
+        // 사용자명으로 사용자 찾기
+        User user = userRepository.findByUsername(userLoginRequest.getUsername())
+                .orElseThrow(() -> new RuntimeException("Invalid username or password"));
+
+        // 비밀번호 검증
+        if (!bCryptPasswordEncoder.matches(userLoginRequest.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid username or password");
+        }
+
+        return user;
     }
 
     private void validateUserRegistration(UserCreateRequest userCreateRequest) {
