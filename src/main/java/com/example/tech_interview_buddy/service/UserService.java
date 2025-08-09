@@ -20,19 +20,17 @@ public class UserService {
     }
 
     @Transactional
-    public Long save(UserCreateRequest userCreateRequest) {
-        // 중복 검증
+    public void save(UserCreateRequest userCreateRequest) {
         validateUserRegistration(userCreateRequest);
 
-        // 새 사용자 생성
-        User user = new User();
-        user.setUsername(userCreateRequest.getUsername());
-        user.setEmail(userCreateRequest.getEmail());
-        user.setPassword(bCryptPasswordEncoder.encode(userCreateRequest.getPassword()));
+        User user = User.builder()
+            .username(userCreateRequest.getUsername())
+            .email(userCreateRequest.getEmail())
+            .password(bCryptPasswordEncoder.encode(userCreateRequest.getPassword()))
+            .build();
 
-        // 사용자 저장
-        User savedUser = userRepository.save(user);
-        return savedUser.getId();
+        userRepository.save(user);
+        return;
     }
 
     public User login(UserLoginRequest userLoginRequest) {
