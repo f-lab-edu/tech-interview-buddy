@@ -6,6 +6,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import com.example.tech_interview_buddy.dto.request.UserCreateRequest;
 import com.example.tech_interview_buddy.dto.request.UserLoginRequest;
 import com.example.tech_interview_buddy.domain.User;
+import jakarta.transaction.Transactional;
+
 
 @Service
 public class UserService {
@@ -17,6 +19,7 @@ public class UserService {
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
     }
 
+    @Transactional
     public Long save(UserCreateRequest userCreateRequest) {
         // 중복 검증
         validateUserRegistration(userCreateRequest);
