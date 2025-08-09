@@ -26,7 +26,7 @@ public class UserController {
         return "users";
     }
 
-    @PostMapping("/register")
+    @PostMapping("")
     public ResponseEntity<?> registerUser(@RequestBody UserCreateRequest userCreateRequest) {
         try {
             Long userId = userService.save(userCreateRequest);
