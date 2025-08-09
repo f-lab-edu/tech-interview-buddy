@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Builder;
 
 
 @Getter
@@ -32,5 +33,10 @@ public class User {
     @Column(nullable = false)
     private String email;
 
-    public void setUsername(String username) { this.username = username; }
+    @Builder
+    public User(String username, String password, String email) {
+        this.username = username;
+        this.password = password;
+        this.email = email;
+    }
 }
