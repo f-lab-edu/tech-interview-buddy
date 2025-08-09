@@ -14,6 +14,7 @@ import com.example.tech_interview_buddy.service.UserService;
 import com.example.tech_interview_buddy.dto.request.UserCreateRequest;
 import com.example.tech_interview_buddy.dto.request.UserLoginRequest;
 import com.example.tech_interview_buddy.domain.User;
+import com.example.tech_interview_buddy.dto.response.UserLoginResponse;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -36,10 +37,10 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody UserLoginRequest userLoginRequest) {
+    public ResponseEntity<?> loginUser(@Valid@RequestBody UserLoginRequest userLoginRequest) {
         try {
             User user = userService.login(userLoginRequest);
-            return ResponseEntity.ok().body("Login successful for user: " + user.getUsername());
+            return ResponseEntity.ok().body(new UserLoginResponse(user.getUsername(), user.getEmail()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Login failed: " + e.getMessage());
         }
