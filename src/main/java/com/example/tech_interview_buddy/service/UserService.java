@@ -34,11 +34,9 @@ public class UserService {
     }
 
     public User login(UserLoginRequest userLoginRequest) {
-        // 사용자명으로 사용자 찾기
         User user = userRepository.findByUsername(userLoginRequest.getUsername())
                 .orElseThrow(() -> new RuntimeException("Invalid username or password"));
 
-        // 비밀번호 검증
         if (!bCryptPasswordEncoder.matches(userLoginRequest.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid username or password");
         }
@@ -55,7 +53,6 @@ public class UserService {
             throw new RuntimeException("Email already exists: " + userCreateRequest.getEmail());
         }
 
-        // 입력 데이터 검증
         if (userCreateRequest.getUsername() == null || userCreateRequest.getUsername().trim().isEmpty()) {
             throw new RuntimeException("Username cannot be empty");
         }
