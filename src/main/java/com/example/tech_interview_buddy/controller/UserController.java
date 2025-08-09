@@ -1,7 +1,12 @@
 package com.example.tech_interview_buddy.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 import com.example.tech_interview_buddy.service.UserService;
 import com.example.tech_interview_buddy.dto.request.UserCreateRequest;
 import com.example.tech_interview_buddy.dto.request.UserLoginRequest;
