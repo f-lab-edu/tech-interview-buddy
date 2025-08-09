@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import jakarta.validation.Valid;
 
 import com.example.tech_interview_buddy.service.UserService;
@@ -28,13 +30,9 @@ public class UserController {
     }
 
     @PostMapping("")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody UserCreateRequest userCreateRequest) {
-        try {
-            Long userId = userService.save(userCreateRequest);
-            return ResponseEntity.ok().body("User registered successfully with ID: " + userId);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Registration failed: " + e.getMessage());
-        }
+    @ResponseStatus(HttpStatus.CREATED)
+    public void registerUser(@Valid @RequestBody UserCreateRequest userCreateRequest) {
+        userService.save(userCreateRequest);
     }
 
     @PostMapping("/login")
