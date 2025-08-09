@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import jakarta.validation.Valid;
 
 import com.example.tech_interview_buddy.service.UserService;
 import com.example.tech_interview_buddy.dto.request.UserCreateRequest;
@@ -27,7 +28,7 @@ public class UserController {
     }
 
     @PostMapping("")
-    public ResponseEntity<?> registerUser(@RequestBody UserCreateRequest userCreateRequest) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody UserCreateRequest userCreateRequest) {
         try {
             Long userId = userService.save(userCreateRequest);
             return ResponseEntity.ok().body("User registered successfully with ID: " + userId);
