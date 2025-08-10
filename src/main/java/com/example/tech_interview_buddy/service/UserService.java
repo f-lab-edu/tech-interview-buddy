@@ -5,7 +5,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import com.example.tech_interview_buddy.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import com.example.tech_interview_buddy.dto.request.UserCreateRequest;
-import com.example.tech_interview_buddy.dto.request.UserLoginRequest;
 import com.example.tech_interview_buddy.domain.User;
 import jakarta.transaction.Transactional;
 
@@ -33,16 +32,5 @@ public class UserService {
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Username or email already exists");
         }
-    }
-
-    public User login(UserLoginRequest userLoginRequest) {
-        User user = userRepository.findByUsername(userLoginRequest.getUsername())
-                .orElseThrow(() -> new RuntimeException("Invalid username or password"));
-
-        if (!bCryptPasswordEncoder.matches(userLoginRequest.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid username or password");
-        }
-
-        return user;
     }
 }
