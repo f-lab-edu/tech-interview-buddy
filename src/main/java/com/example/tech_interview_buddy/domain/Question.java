@@ -64,12 +64,19 @@ public class Question {
     }
 
     public void addTag(Tag tag) {
-        QuestionTag questionTag = new QuestionTag(this, tag);
+        QuestionTag questionTag = QuestionTag.builder()
+            .question(this)
+            .tag(tag)
+            .build();
         questionTags.add(questionTag);
     }
 
     public void addTag(Tag tag, Double weight) {
-        QuestionTag questionTag = new QuestionTag(this, tag, weight);
+        QuestionTag questionTag = QuestionTag.builder()
+            .question(this)
+            .tag(tag)
+            .weight(weight)
+            .build();
         questionTags.add(questionTag);
     }
 
