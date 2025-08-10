@@ -1,29 +1,29 @@
 package com.example.tech_interview_buddy.controller;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import jakarta.validation.Valid;
-
+import com.example.tech_interview_buddy.config.JwtTokenProvider;
 import com.example.tech_interview_buddy.service.UserService;
 import com.example.tech_interview_buddy.dto.request.UserCreateRequest;
 import com.example.tech_interview_buddy.dto.request.UserLoginRequest;
-import com.example.tech_interview_buddy.domain.User;
 import com.example.tech_interview_buddy.dto.response.UserLoginResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
 public class UserController {
-    private final UserService userService;
 
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
+    private final UserService userService;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final AuthenticationManager authenticationManager;
 
     @GetMapping
     public String getUsers() {
@@ -32,17 +32,20 @@ public class UserController {
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    public void registerUser(@Valid @RequestBody UserCreateRequest userCreateRequest) {
+    public ResponseEntity<Void> registerUser(@Valid @RequestBody UserCreateRequest userCreateRequest) {
         userService.save(userCreateRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@Valid@RequestBody UserLoginRequest userLoginRequest) {
-        try {
-            User user = userService.login(userLoginRequest);
-            return ResponseEntity.ok().body(new UserLoginResponse(user.getUsername(), user.getEmail()));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Login failed: " + e.getMessage());
-        }
+    public ResponseEntity<UserLoginResponse> loginUser(@Valid @RequestBody UserLoginRequest userLoginRequest) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(userLoginRequest.getUsername(), userLoginRequest.getPassword())
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String jwt = jwtTokenProvider.generateToken(authentication);
+
+        return ResponseEntity.ok(new UserLoginResponse(jwt));
     }
 }
