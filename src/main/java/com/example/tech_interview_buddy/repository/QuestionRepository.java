@@ -18,7 +18,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     
     Page<Question> findByIsSolved(Boolean isSolved, Pageable pageable);
     
-    @Query("SELECT q FROM Question q WHERE q.title LIKE %:keyword% OR q.content LIKE %:keyword%")
+    @Query("SELECT q FROM Question q WHERE q.content LIKE %:keyword%")
     Page<Question> findByKeyword(@Param("keyword") String keyword, Pageable pageable);
     
     @Query("SELECT DISTINCT q FROM Question q JOIN q.questionTags qt JOIN qt.tag t WHERE t.name IN :tagNames")
