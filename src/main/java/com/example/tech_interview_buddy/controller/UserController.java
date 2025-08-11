@@ -6,7 +6,6 @@ import com.example.tech_interview_buddy.dto.request.UserCreateRequest;
 import com.example.tech_interview_buddy.dto.request.UserLoginRequest;
 import com.example.tech_interview_buddy.dto.response.UserLoginResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -30,13 +29,12 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> registerUser(@Valid @RequestBody UserCreateRequest userCreateRequest) {
+    public void registerUser(@Valid @RequestBody UserCreateRequest userCreateRequest) {
         userService.save(userCreateRequest);
-        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserLoginResponse> loginUser(@Valid @RequestBody UserLoginRequest userLoginRequest) {
+    public UserLoginResponse loginUser(@Valid @RequestBody UserLoginRequest userLoginRequest) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(userLoginRequest.getUsername(), userLoginRequest.getPassword())
         );
@@ -44,6 +42,6 @@ public class UserController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = jwtTokenProvider.generateToken(authentication);
 
-        return ResponseEntity.ok(new UserLoginResponse(jwt));
+        return new UserLoginResponse(jwt);
     }
 }
