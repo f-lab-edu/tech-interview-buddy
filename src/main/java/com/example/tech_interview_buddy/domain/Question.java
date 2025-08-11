@@ -23,10 +23,12 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 @Entity
 @Table(name = "question")
@@ -44,9 +46,11 @@ public class Question {
     private Category category;
 
     @Column(name = "is_solved", nullable = false)
+    @Builder.Default
     private Boolean isSolved = false;
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<QuestionTag> questionTags = new ArrayList<>();
 
     @CreatedDate
