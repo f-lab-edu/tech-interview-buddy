@@ -7,7 +7,6 @@ import com.example.tech_interview_buddy.dto.request.UserLoginRequest;
 import com.example.tech_interview_buddy.dto.response.UserLoginResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -31,10 +30,9 @@ public class UserController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<Void> registerUser(@Valid @RequestBody UserCreateRequest userCreateRequest) {
         userService.save(userCreateRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/login")
