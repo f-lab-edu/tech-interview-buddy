@@ -12,8 +12,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
-
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -29,12 +27,12 @@ public class UserController {
     }
 
     @PostMapping
-    public void registerUser(@Valid @RequestBody UserCreateRequest userCreateRequest) {
+    public void registerUser(@RequestBody UserCreateRequest userCreateRequest) {
         userService.save(userCreateRequest);
     }
 
     @PostMapping("/login")
-    public UserLoginResponse loginUser(@Valid @RequestBody UserLoginRequest userLoginRequest) {
+    public UserLoginResponse loginUser(@RequestBody UserLoginRequest userLoginRequest) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(userLoginRequest.getUsername(), userLoginRequest.getPassword())
         );
