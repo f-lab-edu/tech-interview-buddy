@@ -24,7 +24,14 @@ public class QuestionController {
         @PageableDefault(size = 20) Pageable pageable,
         @RequestParam(required = false) Category category,
         @RequestParam(required = false) String keyword,
-        @RequestParam(required = false) List<String> tags) {
+        @RequestParam(required = false) List<String> tags,
+        @RequestParam(required = false) Boolean isSolved) {
+
+        if (isSolved != null) {
+            return isSolved
+                ? questionService.findSolvedByCurrentUser(pageable)
+                : questionService.findUnsolvedByCurrentUser(pageable);
+        }
 
         if (category != null) {
             return questionService.findByCategoryAsDTO(category, pageable);
