@@ -96,6 +96,20 @@ public class QuestionService {
         return convertToDetailResponse(question, currentUser);
     }
 
+    public Page<QuestionListResponse> findSolvedByCurrentUser(Pageable pageable) {
+        User currentUser = userRepository.findByUsername(getCurrentUsername())
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        return questionRepository.findSolvedByUserId(currentUser.getId(), pageable)
+            .map(question -> convertToListResponse(question, currentUser));
+    }
+
+    public Page<QuestionListResponse> findUnsolvedByCurrentUser(Pageable pageable) {
+        User currentUser = userRepository.findByUsername(getCurrentUsername())
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        return questionRepository.findUnsolvedByUserId(currentUser.getId(), pageable)
+            .map(question -> convertToListResponse(question, currentUser));
+    }
+
     private QuestionListResponse convertToListResponse(Question question, User currentUser) {
         boolean isSolved = answerRepository
             .findByUserIdAndQuestionId(currentUser.getId(), question.getId())

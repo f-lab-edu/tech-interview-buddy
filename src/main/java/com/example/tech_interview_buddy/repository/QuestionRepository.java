@@ -23,4 +23,10 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     
     @Query("SELECT DISTINCT q FROM Question q JOIN q.questionTags qt JOIN qt.tag t WHERE t.name IN :tagNames")
     Page<Question> findByTags(@Param("tagNames") List<String> tagNames, Pageable pageable);
+
+    @Query("SELECT DISTINCT q FROM Question q WHERE EXISTS (SELECT 1 FROM Answer a WHERE a.question = q AND a.user.id = :userId)")
+    Page<Question> findSolvedByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("SELECT q FROM Question q WHERE NOT EXISTS (SELECT 1 FROM Answer a WHERE a.question = q AND a.user.id = :userId)")
+    Page<Question> findUnsolvedByUserId(@Param("userId") Long userId, Pageable pageable);
 } 
