@@ -18,13 +18,10 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Entity
 @Table(name = "tag")
 @EntityListeners(AuditingEntityListener.class)
@@ -44,6 +41,11 @@ public class Tag {
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "tag", fetch = FetchType.LAZY)
-    @Builder.Default
     private List<QuestionTag> questionTags = new ArrayList<>();
+
+    @Builder
+    public Tag(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
 } 
