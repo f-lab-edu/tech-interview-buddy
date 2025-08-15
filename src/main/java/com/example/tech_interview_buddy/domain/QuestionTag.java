@@ -17,13 +17,10 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Entity
 @Table(name = "question_tag")
 @EntityListeners(AuditingEntityListener.class)
@@ -41,12 +38,18 @@ public class QuestionTag {
     private Tag tag;
 
     @Column(name = "weight")
-    @Builder.Default
     private Double weight = 1.0;
 
     @CreatedDate
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Builder
+    public QuestionTag(Question question, Tag tag, Double weight) {
+        this.question = question;
+        this.tag = tag;
+        this.weight = weight != null ? weight : 1.0;
+    }
 
     public void updateWeight(Double weight) {
         this.weight = weight;

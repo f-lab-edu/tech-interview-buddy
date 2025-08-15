@@ -23,13 +23,10 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Entity
 @Table(name = "question")
 @EntityListeners(AuditingEntityListener.class)
@@ -46,11 +43,9 @@ public class Question {
     private Category category;
 
     @Column(name = "is_solved", nullable = false)
-    @Builder.Default
     private Boolean isSolved = false;
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
     private List<QuestionTag> questionTags = new ArrayList<>();
 
     @CreatedDate
@@ -65,6 +60,8 @@ public class Question {
     public Question(String content, Category category) {
         this.content = content;
         this.category = category;
+        this.isSolved = false;
+        this.questionTags = new ArrayList<>();
     }
 
     public void addTag(Tag tag) {
