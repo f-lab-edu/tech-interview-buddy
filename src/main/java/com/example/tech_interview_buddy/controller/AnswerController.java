@@ -13,7 +13,7 @@ public class AnswerController {
 
     private final AnswerService answerService;
 
-    @PostMapping("/{questionId}")
+    @PostMapping("/{questionId}/answers")
     public AnswerResponse createAnswer(@PathVariable Long questionId,
         @RequestBody AnswerRequest request) {
         return answerService.createAnswer(questionId, request);
