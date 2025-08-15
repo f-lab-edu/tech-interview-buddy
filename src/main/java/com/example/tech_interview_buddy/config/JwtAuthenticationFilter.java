@@ -36,14 +36,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (hasInvalidJwtToken(request)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             String jwt = getJwtFromRequest(request);
-
-            if (jwt == null || !jwtTokenProvider.validateToken(jwt)) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-
             String username = jwtTokenProvider.getUsernameFromToken(jwt);
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
@@ -61,13 +60,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String getJwtFromRequest(HttpServletRequest request) {
+    private boolean hasInvalidJwtToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
 
         if (bearerToken == null || !bearerToken.startsWith(BEARER_PREFIX)) {
-            return null;
+            return true;
         }
 
+        String jwt = bearerToken.substring(BEARER_PREFIX_LENGTH);
+        return jwt == null || !jwtTokenProvider.validateToken(jwt);
+    }
+
+    private String getJwtFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
         return bearerToken.substring(BEARER_PREFIX_LENGTH);
     }
 }
