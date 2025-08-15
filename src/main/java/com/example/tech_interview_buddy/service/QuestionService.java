@@ -1,10 +1,10 @@
 package com.example.tech_interview_buddy.service;
 
 import com.example.tech_interview_buddy.domain.Answer;
-import com.example.tech_interview_buddy.domain.Category;
 import com.example.tech_interview_buddy.domain.Question;
 import com.example.tech_interview_buddy.domain.Tag;
 import com.example.tech_interview_buddy.domain.User;
+import com.example.tech_interview_buddy.dto.request.QuestionSearchRequest;
 import com.example.tech_interview_buddy.dto.response.QuestionDetailResponse;
 import com.example.tech_interview_buddy.dto.response.QuestionListResponse;
 import com.example.tech_interview_buddy.repository.AnswerRepository;
@@ -12,12 +12,13 @@ import com.example.tech_interview_buddy.repository.QuestionRepository;
 import com.example.tech_interview_buddy.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -35,57 +36,22 @@ public class QuestionService {
             .orElseThrow(() -> new IllegalArgumentException("Question not found with id: " + id));
     }
 
-    public Page<Question> findAllQuestions(Pageable pageable) {
-        return questionRepository.findAll(pageable);
-    }
-
-    public Page<Question> findByCategory(Category category, Pageable pageable) {
-        return questionRepository.findByCategory(category, pageable);
-    }
-
-    public Page<Question> findByKeyword(String keyword, Pageable pageable) {
-        return questionRepository.findByKeyword(keyword, pageable);
-    }
-
-    public Page<Question> findByTags(List<String> tagNames, Pageable pageable) {
-        return questionRepository.findByTags(tagNames, pageable);
-    }
-
-    public Page<Question> findBySolvedStatus(Boolean isSolved, Pageable pageable) {
-        return questionRepository.findByIsSolved(isSolved, pageable);
-    }
-
-    @Transactional
-    public void markQuestionAsSolved(Long id) {
-        Question question = findById(id);
-        question.markAsSolved();
-    }
-
-    public Page<QuestionListResponse> findAllQuestionsAsDTO(Pageable pageable) {
+    /**
+     * 동적 쿼리를 사용한 통합 검색 메서드
+     * 기존의 여러 메서드들을 하나로 통합
+     */
+    public Page<QuestionListResponse> searchQuestions(QuestionSearchRequest searchRequest) {
         User currentUser = userRepository.findByUsername(getCurrentUsername())
             .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-        return questionRepository.findAll(pageable)
-            .map(question -> convertToListResponse(question, currentUser));
-    }
 
-    public Page<QuestionListResponse> findByCategoryAsDTO(Category category, Pageable pageable) {
-        User currentUser = userRepository.findByUsername(getCurrentUsername())
-            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-        return questionRepository.findByCategory(category, pageable)
-            .map(question -> convertToListResponse(question, currentUser));
-    }
+        Pageable pageable = createPageable(
+            searchRequest.getPage(), 
+            searchRequest.getSize(), 
+            searchRequest.getSort(), 
+            searchRequest.getDirection()
+        );
 
-    public Page<QuestionListResponse> findByKeywordAsDTO(String keyword, Pageable pageable) {
-        User currentUser = userRepository.findByUsername(getCurrentUsername())
-            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-        return questionRepository.findByKeyword(keyword, pageable)
-            .map(question -> convertToListResponse(question, currentUser));
-    }
-
-    public Page<QuestionListResponse> findByTagsAsDTO(List<String> tagNames, Pageable pageable) {
-        User currentUser = userRepository.findByUsername(getCurrentUsername())
-            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-        return questionRepository.findByTags(tagNames, pageable)
+        return questionRepository.searchQuestions(searchRequest, pageable, currentUser.getId())
             .map(question -> convertToListResponse(question, currentUser));
     }
 
@@ -96,18 +62,10 @@ public class QuestionService {
         return convertToDetailResponse(question, currentUser);
     }
 
-    public Page<QuestionListResponse> findSolvedByCurrentUser(Pageable pageable) {
-        User currentUser = userRepository.findByUsername(getCurrentUsername())
-            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-        return questionRepository.findSolvedByUserId(currentUser.getId(), pageable)
-            .map(question -> convertToListResponse(question, currentUser));
-    }
-
-    public Page<QuestionListResponse> findUnsolvedByCurrentUser(Pageable pageable) {
-        User currentUser = userRepository.findByUsername(getCurrentUsername())
-            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-        return questionRepository.findUnsolvedByUserId(currentUser.getId(), pageable)
-            .map(question -> convertToListResponse(question, currentUser));
+    @Transactional
+    public void markQuestionAsSolved(Long id) {
+        Question question = findById(id);
+        question.markAsSolved();
     }
 
     private QuestionListResponse convertToListResponse(Question question, User currentUser) {
@@ -153,5 +111,12 @@ public class QuestionService {
 
     private String getCurrentUsername() {
         return SecurityContextHolder.getContext().getAuthentication().getName();
+    }
+
+    private Pageable createPageable(int page, int size, String sort, String direction) {
+        Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) 
+            ? Sort.Direction.DESC 
+            : Sort.Direction.ASC;
+        return PageRequest.of(page, size, Sort.by(sortDirection, sort));
     }
 }
