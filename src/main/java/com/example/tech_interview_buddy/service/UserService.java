@@ -7,6 +7,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import com.example.tech_interview_buddy.dto.request.UserCreateRequest;
 import com.example.tech_interview_buddy.domain.User;
 import jakarta.transaction.Transactional;
+import java.util.Optional;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 
 @Service
@@ -32,5 +34,15 @@ public class UserService {
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Username or email already exists");
         }
+    }
+    
+    public Optional<User> findByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
+    
+    public User getCurrentUser() {
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(currentUsername)
+            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
     }
 }

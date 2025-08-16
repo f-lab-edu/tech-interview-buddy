@@ -7,8 +7,6 @@ import com.example.tech_interview_buddy.dto.request.CreateAnswerRequest;
 import com.example.tech_interview_buddy.dto.request.UpdateAnswerRequest;
 import com.example.tech_interview_buddy.dto.response.AnswerResponse;
 import com.example.tech_interview_buddy.repository.AnswerRepository;
-import com.example.tech_interview_buddy.repository.QuestionRepository;
-import com.example.tech_interview_buddy.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -22,19 +20,19 @@ import java.util.Optional;
 public class AnswerService {
 
     private final AnswerRepository answerRepository;
-    private final QuestionRepository questionRepository;
-    private final UserRepository userRepository;
+    private final QuestionService questionService;
+    private final UserService userService;
 
     @Transactional
     public AnswerResponse createAnswer(Long questionId, CreateAnswerRequest request) {
         String currentUsername = getCurrentUsername();
-        Optional<User> currentUser = userRepository.findByUsername(currentUsername);
+        Optional<User> currentUser = userService.findByUsername(currentUsername);
 
-        Optional<Question> question = questionRepository.findById(questionId);
+        Question question = questionService.findById(questionId);
 
         Answer answer = Answer.builder()
             .user(currentUser.get())
-            .question(question.get())
+            .question(question)
             .content(request.getContent())
             .build();
 
@@ -49,6 +47,18 @@ public class AnswerService {
 
         answer.updateContent(request.getContent());
         return AnswerResponse.from(answer);
+    }
+    
+    public Optional<Answer> findByUserIdAndQuestionId(Long userId, Long questionId) {
+        return answerRepository.findByUserIdAndQuestionId(userId, questionId);
+    }
+    
+    public boolean isQuestionSolvedByUser(Long questionId, Long userId) {
+        return answerRepository.findByUserIdAndQuestionId(userId, questionId).isPresent();
+    }
+    
+    public Optional<Answer> getMyAnswer(Long questionId, Long userId) {
+        return answerRepository.findByUserIdAndQuestionId(userId, questionId);
     }
 
     private String getCurrentUsername() {

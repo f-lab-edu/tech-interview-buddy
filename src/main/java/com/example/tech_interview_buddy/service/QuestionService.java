@@ -4,18 +4,14 @@ import com.example.tech_interview_buddy.domain.Answer;
 import com.example.tech_interview_buddy.domain.Question;
 import com.example.tech_interview_buddy.domain.Tag;
 import com.example.tech_interview_buddy.domain.User;
-import com.example.tech_interview_buddy.dto.request.QuestionSearchRequest;
 import com.example.tech_interview_buddy.dto.response.QuestionDetailResponse;
 import com.example.tech_interview_buddy.dto.response.QuestionListResponse;
-import com.example.tech_interview_buddy.repository.AnswerRepository;
 import com.example.tech_interview_buddy.repository.QuestionRepository;
-import com.example.tech_interview_buddy.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,8 +24,8 @@ import java.util.stream.Collectors;
 public class QuestionService {
 
     private final QuestionRepository questionRepository;
-    private final AnswerRepository answerRepository;
-    private final UserRepository userRepository;
+    private final AnswerService answerService;
+    private final UserService userService;
 
     public Question findById(Long id) {
         return questionRepository.findById(id)
@@ -41,8 +37,7 @@ public class QuestionService {
      * 기존의 여러 메서드들을 하나로 통합
      */
     public Page<QuestionListResponse> searchQuestions(QuestionSearchRequest searchRequest) {
-        User currentUser = userRepository.findByUsername(getCurrentUsername())
-            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        User currentUser = userService.getCurrentUser();
 
         Pageable pageable = createPageable(
             searchRequest.getPage(), 
@@ -57,8 +52,7 @@ public class QuestionService {
 
     public QuestionDetailResponse findQuestionWithMyAnswer(Long questionId) {
         Question question = findById(questionId);
-        User currentUser = userRepository.findByUsername(getCurrentUsername())
-            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        User currentUser = userService.getCurrentUser();
         return convertToDetailResponse(question, currentUser);
     }
 
@@ -69,9 +63,7 @@ public class QuestionService {
     }
 
     private QuestionListResponse convertToListResponse(Question question, User currentUser) {
-        boolean isSolved = answerRepository
-            .findByUserIdAndQuestionId(currentUser.getId(), question.getId())
-            .isPresent();
+        boolean isSolved = answerService.isQuestionSolvedByUser(question.getId(), currentUser.getId());
 
         return QuestionListResponse.builder()
             .id(question.getId())
@@ -84,8 +76,7 @@ public class QuestionService {
     }
 
     private QuestionDetailResponse convertToDetailResponse(Question question, User currentUser) {
-        Optional<Answer> myAnswer = answerRepository
-            .findByUserIdAndQuestionId(currentUser.getId(), question.getId());
+        Optional<Answer> myAnswer = answerService.getMyAnswer(question.getId(), currentUser.getId());
 
         QuestionDetailResponse.MyAnswerResponse myAnswerResponse = null;
         if (myAnswer.isPresent()) {
