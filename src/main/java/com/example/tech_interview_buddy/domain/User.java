@@ -2,6 +2,8 @@ package com.example.tech_interview_buddy.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -33,10 +35,23 @@ public class User {
     @Column(nullable = false)
     private String email;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role = UserRole.USER;
+
     @Builder
     public User(String username, String password, String email) {
         this.username = username;
         this.password = password;
         this.email = email;
+        this.role = UserRole.USER;
+    }
+    
+    @Builder
+    public User(String username, String password, String email, UserRole role) {
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.role = role != null ? role : UserRole.USER;
     }
 }
