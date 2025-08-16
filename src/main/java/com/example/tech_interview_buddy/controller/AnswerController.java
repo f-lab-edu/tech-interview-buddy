@@ -1,6 +1,7 @@
 package com.example.tech_interview_buddy.controller;
 
-import com.example.tech_interview_buddy.dto.request.AnswerRequest;
+import com.example.tech_interview_buddy.dto.request.CreateAnswerRequest;
+import com.example.tech_interview_buddy.dto.request.UpdateAnswerRequest;
 import com.example.tech_interview_buddy.dto.response.AnswerResponse;
 import com.example.tech_interview_buddy.service.AnswerService;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,13 @@ public class AnswerController {
 
     @PostMapping("/{questionId}/answers")
     public AnswerResponse createAnswer(@PathVariable Long questionId,
-        @RequestBody AnswerRequest request) {
+        @RequestBody CreateAnswerRequest request) {
         return answerService.createAnswer(questionId, request);
+    }
+    
+    @PutMapping("/{questionId}/answers")
+    public AnswerResponse updateAnswer(@PathVariable Long questionId,
+        @RequestBody UpdateAnswerRequest request) {
+        return answerService.updateAnswer(questionId, request.getAnswerId(), request);
     }
 } 
