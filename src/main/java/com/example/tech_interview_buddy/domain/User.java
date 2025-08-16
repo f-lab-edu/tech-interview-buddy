@@ -54,4 +54,8 @@ public class User {
         this.email = email;
         this.role = role != null ? role : UserRole.USER;
     }
+
+    public void updateRole(UserRole role) {
+        this.role = role;
+    }
 }

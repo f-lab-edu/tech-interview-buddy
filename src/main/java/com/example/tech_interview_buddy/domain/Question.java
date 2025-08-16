@@ -102,4 +102,24 @@ public class Question {
     public void changeCategory(Category category) {
         this.category = category;
     }
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
+
+    public void updateCategory(Category category) {
+        this.category = category;
+    }
+
+    public void setTags(List<Tag> tags) {
+        this.questionTags.clear();
+        
+        if (tags != null) {
+            tags.forEach(this::addTag);
+        }
+    }
+
+    public void removeTag(String tagName) {
+        questionTags.removeIf(qt -> qt.getTag().getName().equals(tagName));
+    }
 }
