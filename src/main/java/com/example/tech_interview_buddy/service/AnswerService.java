@@ -33,29 +33,26 @@ public class AnswerService {
         Question question = questionRepository.findById(questionId)
             .orElseThrow(() -> new RuntimeException("질문을 찾을 수 없습니다."));
 
+        Answer answer = createOrUpdateAnswer(currentUser, question, request.getContent());
+        return AnswerResponse.from(answer);
+    }
+    
+    private Answer createOrUpdateAnswer(User user, Question question, String content) {
         Optional<Answer> existingAnswer = answerRepository.findByUserIdAndQuestionId(
-            currentUser.getId(), questionId);
-
-        Answer answer;
+            user.getId(), question.getId());
+            
         if (existingAnswer.isPresent()) {
-            answer = existingAnswer.get();
-            answer.updateContent(request.getContent());
+            Answer answer = existingAnswer.get();
+            answer.updateContent(content);
+            return answer;
         } else {
-            answer = Answer.builder()
-                .user(currentUser)
+            Answer answer = Answer.builder()
+                .user(user)
                 .question(question)
-                .content(request.getContent())
+                .content(content)
                 .build();
-
-            answer = answerRepository.save(answer);
+            return answerRepository.save(answer);
         }
-
-        return AnswerResponse.builder()
-            .id(answer.getId())
-            .content(answer.getContent())
-            .createdAt(answer.getCreatedAt())
-            .updatedAt(answer.getUpdatedAt())
-            .build();
     }
 
     private String getCurrentUsername() {
