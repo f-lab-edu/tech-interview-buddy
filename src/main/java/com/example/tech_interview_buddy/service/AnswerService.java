@@ -7,7 +7,7 @@ import com.example.tech_interview_buddy.dto.request.CreateAnswerRequest;
 import com.example.tech_interview_buddy.dto.request.UpdateAnswerRequest;
 import com.example.tech_interview_buddy.dto.response.AnswerResponse;
 import com.example.tech_interview_buddy.repository.AnswerRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,13 +15,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AnswerService {
 
     private final AnswerRepository answerRepository;
     private final QuestionService questionService;
     private final UserService userService;
+
+    public AnswerService(AnswerRepository answerRepository, @Lazy QuestionService questionService, UserService userService) {
+        this.answerRepository = answerRepository;
+        this.questionService = questionService;
+        this.userService = userService;
+    }
 
     @Transactional
     public AnswerResponse createAnswer(Long questionId, CreateAnswerRequest request) {

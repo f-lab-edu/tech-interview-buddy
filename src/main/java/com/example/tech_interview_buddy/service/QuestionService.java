@@ -4,6 +4,7 @@ import com.example.tech_interview_buddy.domain.Answer;
 import com.example.tech_interview_buddy.domain.Question;
 import com.example.tech_interview_buddy.domain.Tag;
 import com.example.tech_interview_buddy.domain.User;
+import com.example.tech_interview_buddy.dto.request.QuestionSearchRequest;
 import com.example.tech_interview_buddy.dto.response.QuestionDetailResponse;
 import com.example.tech_interview_buddy.dto.response.QuestionListResponse;
 import com.example.tech_interview_buddy.repository.QuestionRepository;
@@ -98,10 +99,6 @@ public class QuestionService {
             .updatedAt(question.getUpdatedAt())
             .myAnswer(myAnswerResponse)
             .build();
-    }
-
-    private String getCurrentUsername() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
     private Pageable createPageable(int page, int size, String sort, String direction) {
