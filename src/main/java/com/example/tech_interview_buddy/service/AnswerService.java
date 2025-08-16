@@ -3,7 +3,8 @@ package com.example.tech_interview_buddy.service;
 import com.example.tech_interview_buddy.domain.Answer;
 import com.example.tech_interview_buddy.domain.Question;
 import com.example.tech_interview_buddy.domain.User;
-import com.example.tech_interview_buddy.dto.request.AnswerRequest;
+import com.example.tech_interview_buddy.dto.request.CreateAnswerRequest;
+import com.example.tech_interview_buddy.dto.request.UpdateAnswerRequest;
 import com.example.tech_interview_buddy.dto.response.AnswerResponse;
 import com.example.tech_interview_buddy.repository.AnswerRepository;
 import com.example.tech_interview_buddy.repository.QuestionRepository;
@@ -25,34 +26,29 @@ public class AnswerService {
     private final UserRepository userRepository;
 
     @Transactional
-    public AnswerResponse createAnswer(Long questionId, AnswerRequest request) {
+    public AnswerResponse createAnswer(Long questionId, CreateAnswerRequest request) {
         String currentUsername = getCurrentUsername();
-        User currentUser = userRepository.findByUsername(currentUsername)
-            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        Optional<User> currentUser = userRepository.findByUsername(currentUsername);
 
-        Question question = questionRepository.findById(questionId)
-            .orElseThrow(() -> new RuntimeException("질문을 찾을 수 없습니다."));
+        Optional<Question> question = questionRepository.findById(questionId);
 
-        Answer answer = createOrUpdateAnswer(currentUser, question, request.getContent());
+        Answer answer = Answer.builder()
+            .user(currentUser.get())
+            .question(question.get())
+            .content(request.getContent())
+            .build();
+
+        answer = answerRepository.save(answer);
         return AnswerResponse.from(answer);
     }
-    
-    private Answer createOrUpdateAnswer(User user, Question question, String content) {
-        Optional<Answer> existingAnswer = answerRepository.findByUserIdAndQuestionId(
-            user.getId(), question.getId());
-            
-        if (existingAnswer.isPresent()) {
-            Answer answer = existingAnswer.get();
-            answer.updateContent(content);
-            return answer;
-        } else {
-            Answer answer = Answer.builder()
-                .user(user)
-                .question(question)
-                .content(content)
-                .build();
-            return answerRepository.save(answer);
-        }
+
+    @Transactional
+    public AnswerResponse updateAnswer(Long questionId, Long answerId, UpdateAnswerRequest request) {
+        Optional<Answer> answerOpt = answerRepository.findById(answerId);
+        Answer answer = answerOpt.get();
+
+        answer.updateContent(request.getContent());
+        return AnswerResponse.from(answer);
     }
 
     private String getCurrentUsername() {
