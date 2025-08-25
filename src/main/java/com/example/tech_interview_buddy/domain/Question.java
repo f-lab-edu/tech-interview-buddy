@@ -72,15 +72,6 @@ public class Question {
         questionTags.add(questionTag);
     }
 
-    public void addTag(Tag tag, Double weight) {
-        QuestionTag questionTag = QuestionTag.builder()
-            .question(this)
-            .tag(tag)
-            .weight(weight)
-            .build();
-        questionTags.add(questionTag);
-    }
-
     public List<Tag> getTags() {
         return questionTags.stream()
             .map(QuestionTag::getTag)

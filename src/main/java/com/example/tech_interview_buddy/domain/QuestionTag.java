@@ -37,21 +37,13 @@ public class QuestionTag {
     @JoinColumn(name = "tag_id", nullable = false)
     private Tag tag;
 
-    @Column(name = "weight")
-    private Double weight = 1.0;
-
     @CreatedDate
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Builder
-    public QuestionTag(Question question, Tag tag, Double weight) {
+    public QuestionTag(Question question, Tag tag) {
         this.question = question;
         this.tag = tag;
-        this.weight = weight != null ? weight : 1.0;
-    }
-
-    public void updateWeight(Double weight) {
-        this.weight = weight;
     }
 } 
