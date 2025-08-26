@@ -89,7 +89,12 @@ public class AdminService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found with username: " + username));
 
         user.updateRole(UserRole.ADMIN);
-        return UserResponse.from(user);
+        return UserResponse.builder()
+            .id(user.getId())
+            .username(user.getUsername())
+            .email(user.getEmail())
+            .role(user.getRole())
+            .build();
     }
 
     public UserResponse revokeAdminRole(String username) {
@@ -97,12 +102,22 @@ public class AdminService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found with username: " + username));
 
         user.updateRole(UserRole.USER);
-        return UserResponse.from(user);
+        return UserResponse.builder()
+            .id(user.getId())
+            .username(user.getUsername())
+            .email(user.getEmail())
+            .role(user.getRole())
+            .build();
     }
 
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
-                .map(UserResponse::from)
+                .map(user -> UserResponse.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .role(user.getRole())
+                    .build())
                 .collect(Collectors.toList());
     }
 

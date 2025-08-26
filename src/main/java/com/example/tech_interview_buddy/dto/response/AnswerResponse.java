@@ -1,5 +1,6 @@
 package com.example.tech_interview_buddy.dto.response;
 
+import com.example.tech_interview_buddy.domain.Answer;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -12,4 +13,13 @@ public class AnswerResponse {
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public static AnswerResponse from(Answer answer) {
+        return AnswerResponse.builder()
+            .id(answer.getId())
+            .content(answer.getContent())
+            .createdAt(answer.getCreatedAt())
+            .updatedAt(answer.getUpdatedAt())
+            .build();
+    }
 } 

@@ -1,12 +1,10 @@
 package com.example.tech_interview_buddy.dto.response;
 
 import lombok.Getter;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.Builder;
 
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
+@Builder
 public class UserLoginResponse {
     private String token;
 }

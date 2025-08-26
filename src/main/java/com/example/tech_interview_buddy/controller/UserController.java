@@ -40,6 +40,8 @@ public class UserController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = jwtTokenProvider.generateToken(authentication);
 
-        return new UserLoginResponse(jwt);
+        return UserLoginResponse.builder()
+            .token(jwt)
+            .build();
     }
 }
