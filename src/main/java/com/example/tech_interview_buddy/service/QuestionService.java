@@ -4,7 +4,10 @@ import com.example.tech_interview_buddy.domain.Answer;
 import com.example.tech_interview_buddy.domain.Question;
 import com.example.tech_interview_buddy.domain.Tag;
 import com.example.tech_interview_buddy.domain.User;
+import com.example.tech_interview_buddy.dto.request.QuestionCreateRequest;
 import com.example.tech_interview_buddy.dto.request.QuestionSearchRequest;
+import com.example.tech_interview_buddy.dto.enums.SortDirection;
+import com.example.tech_interview_buddy.dto.enums.SortField;
 import com.example.tech_interview_buddy.dto.response.QuestionDetailResponse;
 import com.example.tech_interview_buddy.dto.response.QuestionListResponse;
 import com.example.tech_interview_buddy.repository.QuestionRepository;
@@ -16,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -27,6 +31,7 @@ public class QuestionService {
     private final QuestionRepository questionRepository;
     private final AnswerService answerService;
     private final UserService userService;
+    private final TagService tagService;
 
     public Question findById(Long id) {
         return questionRepository.findById(id)
@@ -61,6 +66,35 @@ public class QuestionService {
     public void markQuestionAsSolved(Long id) {
         Question question = findById(id);
         question.markAsSolved();
+    }
+
+    @Transactional
+    public QuestionDetailResponse createQuestion(QuestionCreateRequest request) {
+        Question question = Question.builder()
+            .content(request.getContent())
+            .category(request.getCategory())
+            .build();
+        
+        Question savedQuestion = questionRepository.save(question);
+        User currentUser = userService.getCurrentUser();
+        return convertToDetailResponse(savedQuestion, currentUser);
+    }
+
+    @Transactional
+    public QuestionDetailResponse addTagsToQuestion(Long questionId, List<String> tagNames) {
+        Question question = findById(questionId);
+        
+        question.getQuestionTags().clear();
+        
+        if (tagNames != null) {
+            for (String tagName : tagNames) {
+                Tag tag = tagService.findOrCreateTag(tagName);
+                question.addTag(tag);
+            }
+        }
+        
+        User currentUser = userService.getCurrentUser();
+        return convertToDetailResponse(question, currentUser);
     }
 
     private QuestionListResponse convertToListResponse(Question question, User currentUser) {
@@ -101,10 +135,8 @@ public class QuestionService {
             .build();
     }
 
-    private Pageable createPageable(int page, int size, String sort, String direction) {
-        Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) 
-            ? Sort.Direction.DESC 
-            : Sort.Direction.ASC;
-        return PageRequest.of(page, size, Sort.by(sortDirection, sort));
+    private Pageable createPageable(int page, int size, SortField sort, SortDirection direction) {
+        Sort.Direction sortDirection = direction.toSortDirection();
+        return PageRequest.of(page, size, Sort.by(sortDirection, sort.getFieldName()));
     }
 }
