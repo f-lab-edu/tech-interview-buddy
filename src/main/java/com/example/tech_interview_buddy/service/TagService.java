@@ -24,7 +24,7 @@ public class TagService {
 
         Tag tag = Tag.builder()
             .name(name)
-            .description(description)
+            .description(description != null ? description : "")
             .build();
         return tagRepository.save(tag);
     }
@@ -40,5 +40,11 @@ public class TagService {
 
     public List<Tag> findAllTags() {
         return tagRepository.findAll();
+    }
+
+    @Transactional
+    public Tag findOrCreateTag(String name) {
+        return tagRepository.findByName(name)
+            .orElseGet(() -> createTag(name, null));
     }
 }

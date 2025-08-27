@@ -35,6 +35,18 @@ public class AnswerService {
 
         Question question = questionService.findById(questionId);
 
+        // 기존 답변이 있는지 확인
+        Optional<Answer> existingAnswer = answerRepository.findByUserIdAndQuestionId(
+            currentUser.get().getId(), questionId);
+        
+        if (existingAnswer.isPresent()) {
+            // 기존 답변이 있으면 업데이트 (중복 생성 방지)
+            Answer answer = existingAnswer.get();
+            answer.updateContent(request.getContent());
+            return AnswerResponse.from(answer);
+        }
+
+        // 기존 답변이 없으면 새로 생성
         Answer answer = Answer.builder()
             .user(currentUser.get())
             .question(question)
