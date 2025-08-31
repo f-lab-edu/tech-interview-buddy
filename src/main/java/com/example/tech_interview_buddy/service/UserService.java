@@ -5,9 +5,13 @@ import org.springframework.dao.DataIntegrityViolationException;
 import com.example.tech_interview_buddy.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import com.example.tech_interview_buddy.dto.request.UserCreateRequest;
+import com.example.tech_interview_buddy.dto.response.UserResponse;
 import com.example.tech_interview_buddy.domain.User;
+import com.example.tech_interview_buddy.domain.UserRole;
 import jakarta.transaction.Transactional;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 
@@ -43,6 +47,46 @@ public class UserService {
     public User getCurrentUser() {
         String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByUsername(currentUsername)
-            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Current user not found"));
+    }
+
+    // Admin 기능들 - 기존 AdminService에서 이동
+    @Transactional
+    public UserResponse grantAdminRole(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with username: " + username));
+
+        user.updateRole(UserRole.ADMIN);
+        return UserResponse.builder()
+            .id(user.getId())
+            .username(user.getUsername())
+            .email(user.getEmail())
+            .role(user.getRole())
+            .build();
+    }
+
+    @Transactional
+    public UserResponse revokeAdminRole(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with username: " + username));
+
+        user.updateRole(UserRole.USER);
+        return UserResponse.builder()
+            .id(user.getId())
+            .username(user.getUsername())
+            .email(user.getEmail())
+            .role(user.getRole())
+            .build();
+    }
+
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(user -> UserResponse.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .role(user.getRole())
+                    .build())
+                .collect(Collectors.toList());
     }
 }

@@ -5,12 +5,16 @@ import com.example.tech_interview_buddy.service.UserService;
 import com.example.tech_interview_buddy.dto.request.UserCreateRequest;
 import com.example.tech_interview_buddy.dto.request.UserLoginRequest;
 import com.example.tech_interview_buddy.dto.response.UserLoginResponse;
+import com.example.tech_interview_buddy.dto.response.UserResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -22,8 +26,9 @@ public class UserController {
     private final AuthenticationManager authenticationManager;
 
     @GetMapping
-    public String getUsers() {
-        return "users";
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<UserResponse> getAllUsers() {
+        return userService.getAllUsers();
     }
 
     @PostMapping
@@ -43,5 +48,17 @@ public class UserController {
         return UserLoginResponse.builder()
             .token(jwt)
             .build();
+    }
+
+    @PostMapping("/{username}/grant-admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserResponse grantAdminRole(@PathVariable String username) {
+        return userService.grantAdminRole(username);
+    }
+
+    @PostMapping("/{username}/revoke-admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserResponse revokeAdminRole(@PathVariable String username) {
+        return userService.revokeAdminRole(username);
     }
 }
