@@ -6,6 +6,8 @@ import com.example.tech_interview_buddy.domain.Tag;
 import com.example.tech_interview_buddy.domain.User;
 import com.example.tech_interview_buddy.dto.request.QuestionCreateRequest;
 import com.example.tech_interview_buddy.dto.request.QuestionSearchRequest;
+import com.example.tech_interview_buddy.dto.request.QuestionUpdateRequest;
+import com.example.tech_interview_buddy.dto.request.TagRequest;
 import com.example.tech_interview_buddy.dto.enums.SortDirection;
 import com.example.tech_interview_buddy.dto.enums.SortField;
 import com.example.tech_interview_buddy.dto.response.QuestionDetailResponse;
@@ -95,6 +97,45 @@ public class QuestionService {
         
         User currentUser = userService.getCurrentUser();
         return convertToDetailResponse(question, currentUser);
+    }
+
+    @Transactional
+    public QuestionDetailResponse updateQuestion(Long questionId, QuestionUpdateRequest request) {
+        Question question = findById(questionId);
+
+        question.updateContent(request.getContent());
+        question.updateCategory(request.getCategory());
+
+        if (request.getTags() != null) {
+            List<Tag> tags = request.getTags().stream()
+                    .map(tagName -> tagService.findOrCreateTag(tagName))
+                    .collect(Collectors.toList());
+            question.setTags(tags);
+        }
+
+        User currentUser = userService.getCurrentUser();
+        return convertToDetailResponse(question, currentUser);
+    }
+
+    @Transactional
+    public void deleteQuestion(Long questionId) {
+        if (!questionRepository.existsById(questionId)) {
+            throw new IllegalArgumentException("Question not found with id: " + questionId);
+        }
+        questionRepository.deleteById(questionId);
+    }
+
+    @Transactional
+    public void addTagToQuestion(Long questionId, TagRequest request) {
+        Question question = findById(questionId);
+        Tag tag = tagService.findOrCreateTag(request.getName());
+        question.addTag(tag);
+    }
+
+    @Transactional
+    public void removeTagFromQuestion(Long questionId, String tagName) {
+        Question question = findById(questionId);
+        question.removeTag(tagName);
     }
 
     private QuestionListResponse convertToListResponse(Question question, User currentUser) {

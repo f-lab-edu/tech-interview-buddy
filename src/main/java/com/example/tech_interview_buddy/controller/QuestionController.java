@@ -2,6 +2,8 @@ package com.example.tech_interview_buddy.controller;
 
 import com.example.tech_interview_buddy.dto.request.QuestionCreateRequest;
 import com.example.tech_interview_buddy.dto.request.QuestionSearchRequest;
+import com.example.tech_interview_buddy.dto.request.QuestionUpdateRequest;
+import com.example.tech_interview_buddy.dto.request.TagRequest;
 import com.example.tech_interview_buddy.dto.response.QuestionDetailResponse;
 import com.example.tech_interview_buddy.dto.response.QuestionListResponse;
 import com.example.tech_interview_buddy.service.QuestionService;
@@ -11,13 +13,7 @@ import com.example.tech_interview_buddy.domain.Category;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -73,5 +69,35 @@ public class QuestionController {
     @PreAuthorize("hasRole('ADMIN')")
     public QuestionDetailResponse addTagsToQuestion(@PathVariable Long id, @RequestBody List<String> tagNames) {
         return questionService.addTagsToQuestion(id, tagNames);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public QuestionDetailResponse updateQuestion(
+            @PathVariable Long id,
+            @RequestBody QuestionUpdateRequest request) {
+        return questionService.updateQuestion(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public void deleteQuestion(@PathVariable Long id) {
+        questionService.deleteQuestion(id);
+    }
+
+    @PostMapping("/{id}/tags/single")
+    @PreAuthorize("hasRole('ADMIN')")
+    public void addTagToQuestion(
+            @PathVariable Long id,
+            @RequestBody TagRequest request) {
+        questionService.addTagToQuestion(id, request);
+    }
+
+    @DeleteMapping("/{id}/tags/{tagName}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public void removeTagFromQuestion(
+            @PathVariable Long id,
+            @PathVariable String tagName) {
+        questionService.removeTagFromQuestion(id, tagName);
     }
 } 
