@@ -10,6 +10,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import com.example.tech_interview_buddy.repository.UserRepository;
+import com.example.tech_interview_buddy.domain.User;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -26,6 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsService userDetailsService;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -42,17 +45,44 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
+            long startTime = System.currentTimeMillis();
+            
             String jwt = getJwtFromRequest(request);
+            long jwtExtractTime = System.currentTimeMillis();
+            log.debug("JWT 추출 시간: {}ms", jwtExtractTime - startTime);
+            
             String username = jwtTokenProvider.getUsernameFromToken(jwt);
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            long usernameExtractTime = System.currentTimeMillis();
+            log.debug("사용자명 추출 시간: {}ms", usernameExtractTime - jwtExtractTime);
+            
+            // User 엔티티를 먼저 조회 (한 번만 DB 조회)
+            User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            long userEntityTime = System.currentTimeMillis();
+            log.debug("User 엔티티 로딩 시간: {}ms", userEntityTime - usernameExtractTime);
+            
+            // UserDetails는 User 엔티티에서 직접 생성 (DB 조회 없음)
+            UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
+                .username(user.getUsername())
+                .password(user.getPassword())
+                .authorities(user.getRole().name())
+                .build();
+            long userDetailsTime = System.currentTimeMillis();
+            log.debug("UserDetails 생성 시간: {}ms", userDetailsTime - userEntityTime);
 
             UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(userDetails, null,
                     userDetails.getAuthorities());
             authentication.setDetails(
                 new WebAuthenticationDetailsSource().buildDetails(request));
-
+            
+            // User 엔티티를 SecurityContext에 추가로 저장
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            request.setAttribute("currentUser", user);
+            
+            long totalTime = System.currentTimeMillis();
+            log.debug("JWT 인증 총 시간: {}ms", totalTime - startTime);
+
         } catch (Exception ex) {
             log.error("Could not set user authentication in security context", ex);
         }

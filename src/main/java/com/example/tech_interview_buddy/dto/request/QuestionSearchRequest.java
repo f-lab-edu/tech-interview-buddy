@@ -6,7 +6,6 @@ import com.example.tech_interview_buddy.dto.enums.SortField;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.List;
 
 @Getter
 @Builder
@@ -14,7 +13,7 @@ public class QuestionSearchRequest {
     
     private Category category;
     private String keyword;
-    private List<String> tags;
+    private java.util.List<String> tags;
     private Boolean isSolved;
     
     @Builder.Default

@@ -2,8 +2,10 @@ package com.example.tech_interview_buddy.repository;
 
 import com.example.tech_interview_buddy.domain.Question;
 import com.example.tech_interview_buddy.dto.request.QuestionSearchRequest;
+import com.example.tech_interview_buddy.dto.projection.QuestionSimpleProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
 
 public interface QuestionRepositoryCustom {
 
@@ -16,4 +18,22 @@ public interface QuestionRepositoryCustom {
      * @return 검색 결과
      */
     Page<Question> searchQuestions(QuestionSearchRequest searchRequest, Pageable pageable, Long currentUserId);
+    
+    
+    /**
+     * JPA/Hibernate 오버헤드 진단을 위한 DTO Projection 메서드
+     * 엔티티 로딩 대신 간단한 DTO로 조회하여 성능 측정
+     */
+    Page<QuestionSimpleProjection> searchQuestionsWithProjection(QuestionSearchRequest searchRequest, Pageable pageable, Long currentUserId);
+    
+    /**
+     * 동적 쿼리를 사용하여 검색 조건에 맞는 질문의 총 개수를 반환합니다.
+     * 캐싱을 통해 성능을 최적화합니다.
+     *
+     * @param searchRequest 검색 조건
+     * @param currentUserId 현재 사용자 ID (isSolved 필터링용)
+     * @return 조건에 맞는 질문의 총 개수
+     */
+    long countQuestions(QuestionSearchRequest searchRequest, Long currentUserId);
+    
 }

@@ -3,7 +3,6 @@ package com.example.tech_interview_buddy.controller;
 import com.example.tech_interview_buddy.dto.request.QuestionCreateRequest;
 import com.example.tech_interview_buddy.dto.request.QuestionSearchRequest;
 import com.example.tech_interview_buddy.dto.request.QuestionUpdateRequest;
-import com.example.tech_interview_buddy.dto.request.TagRequest;
 import com.example.tech_interview_buddy.dto.response.QuestionDetailResponse;
 import com.example.tech_interview_buddy.dto.response.QuestionListResponse;
 import com.example.tech_interview_buddy.service.QuestionService;
@@ -15,7 +14,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/questions")
@@ -31,10 +29,24 @@ public class QuestionController {
 
     @GetMapping
     public Page<QuestionListResponse> getQuestions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        
+        // 기본 조회용 - 단순한 페이징만 제공
+        QuestionSearchRequest searchRequest = QuestionSearchRequest.builder()
+            .page(page)
+            .size(size)
+            .sort(SortField.ID)
+            .direction(SortDirection.ASC)
+            .build();
+            
+        return questionService.searchQuestions(searchRequest);
+    }
+
+    @GetMapping("/projection")
+    public Page<QuestionListResponse> getQuestionsWithProjection(
             @RequestParam(required = false) Category category,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) List<String> tags,
-            @RequestParam(required = false) Boolean isSolved,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) SortField sort,
@@ -43,15 +55,13 @@ public class QuestionController {
         QuestionSearchRequest searchRequest = QuestionSearchRequest.builder()
             .category(category)
             .keyword(keyword)
-            .tags(tags)
-            .isSolved(isSolved)
             .page(page)
             .size(size)
             .sort(sort != null ? sort : SortField.ID)
             .direction(direction != null ? direction : SortDirection.ASC)
             .build();
             
-        return questionService.searchQuestions(searchRequest);
+        return questionService.searchQuestionsWithProjection(searchRequest);
     }
 
     @GetMapping("/{id}")
@@ -65,11 +75,6 @@ public class QuestionController {
         return questionService.createQuestion(request);
     }
 
-    @PostMapping("/{id}/tags")
-    @PreAuthorize("hasRole('ADMIN')")
-    public QuestionDetailResponse addTagsToQuestion(@PathVariable Long id, @RequestBody List<String> tagNames) {
-        return questionService.addTagsToQuestion(id, tagNames);
-    }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -85,19 +90,4 @@ public class QuestionController {
         questionService.deleteQuestion(id);
     }
 
-    @PostMapping("/{id}/tags/single")
-    @PreAuthorize("hasRole('ADMIN')")
-    public void addTagToQuestion(
-            @PathVariable Long id,
-            @RequestBody TagRequest request) {
-        questionService.addTagToQuestion(id, request);
-    }
-
-    @DeleteMapping("/{id}/tags/{tagName}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public void removeTagFromQuestion(
-            @PathVariable Long id,
-            @PathVariable String tagName) {
-        questionService.removeTagFromQuestion(id, tagName);
-    }
 } 
