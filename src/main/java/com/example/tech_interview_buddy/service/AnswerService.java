@@ -7,12 +7,14 @@ import com.example.tech_interview_buddy.dto.request.CreateAnswerRequest;
 import com.example.tech_interview_buddy.dto.request.UpdateAnswerRequest;
 import com.example.tech_interview_buddy.dto.response.AnswerResponse;
 import com.example.tech_interview_buddy.repository.AnswerRepository;
+import com.example.tech_interview_buddy.repository.QuestionRepositoryImpl;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -21,11 +23,13 @@ public class AnswerService {
     private final AnswerRepository answerRepository;
     private final QuestionService questionService;
     private final UserService userService;
+    private final QuestionRepositoryImpl questionRepositoryImpl;
 
-    public AnswerService(AnswerRepository answerRepository, @Lazy QuestionService questionService, UserService userService) {
+    public AnswerService(AnswerRepository answerRepository, @Lazy QuestionService questionService, UserService userService, QuestionRepositoryImpl questionRepositoryImpl) {
         this.answerRepository = answerRepository;
         this.questionService = questionService;
         this.userService = userService;
+        this.questionRepositoryImpl = questionRepositoryImpl;
     }
 
     @Transactional
@@ -76,6 +80,24 @@ public class AnswerService {
     
     public Optional<Answer> getMyAnswer(Long questionId, Long userId) {
         return answerRepository.findByUserIdAndQuestionId(userId, questionId);
+    }
+    
+    /**
+     * 사용자가 풀은 문제 ID들을 배치로 조회 (성능 최적화)
+     */
+    public Set<Long> getSolvedQuestionIdsByUser(Long userId) {
+        return answerRepository.findQuestionIdsByUserId(userId);
+    }
+    
+    /**
+     * 특정 질문들에 대해 사용자가 풀었는지 확인 (성능 최적화)
+     * 전체 조회가 아닌 특정 질문들에 대해서만 조회
+     */
+    public Set<Long> getSolvedQuestionIdsByUserAndQuestions(Long userId, java.util.List<Long> questionIds) {
+        if (questionIds == null || questionIds.isEmpty()) {
+            return java.util.Collections.emptySet();
+        }
+        return answerRepository.findQuestionIdsByUserIdAndQuestionIds(userId, questionIds);
     }
 
     private String getCurrentUsername() {
