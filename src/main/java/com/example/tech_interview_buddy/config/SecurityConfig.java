@@ -39,7 +39,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/v1/users/**").permitAll()
-                
+                .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/v1/questions").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/questions/{id}").hasRole("ADMIN")
