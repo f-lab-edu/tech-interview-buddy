@@ -30,17 +30,17 @@ public class Tag {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name", nullable = false, unique = true, length = 50)
+    @Column(nullable = false, unique = true)
     private String name;
 
-    @Column(name = "description", length = 200)
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @CreatedDate
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "tag", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "tag", cascade = jakarta.persistence.CascadeType.ALL, fetch = FetchType.LAZY)
     private List<QuestionTag> questionTags = new ArrayList<>();
 
     @Builder
@@ -48,4 +48,12 @@ public class Tag {
         this.name = name;
         this.description = description;
     }
-} 
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void updateDescription(String description) {
+        this.description = description;
+    }
+}
