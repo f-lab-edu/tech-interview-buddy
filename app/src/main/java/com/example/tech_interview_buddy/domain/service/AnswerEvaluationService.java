@@ -1,7 +1,9 @@
 package com.example.tech_interview_buddy.domain.service;
 
 import com.example.tech_interview_buddy.app.config.OpenAiConfig;
+import com.example.tech_interview_buddy.domain.Answer;
 import com.example.tech_interview_buddy.domain.Question;
+import com.example.tech_interview_buddy.domain.repository.AnswerRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +12,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -24,6 +28,7 @@ public class AnswerEvaluationService {
     private final OpenAiConfig openAiConfig;
     private final RestTemplate restTemplate;
     private final AnswerEvaluationPromptTemplate promptTemplate;
+    private final AnswerRepository answerRepository;
 
     private static final String MODEL = "gpt-4o-mini";
     private static final double TEMPERATURE = 0.3;
@@ -111,6 +116,26 @@ public class AnswerEvaluationService {
                 log.error("Cause: {}", e.getCause().getMessage());
             }
             return null;
+        }
+    }
+
+    @Async
+    @Transactional
+    public void evaluateAnswerAsync(Long answerId, Question question, String answerContent) {
+        log.info("Starting async evaluation for answer ID: {}", answerId);
+        
+        String feedback = evaluateAnswer(question, answerContent);
+        
+        if (feedback != null) {
+            Answer answer = answerRepository.findById(answerId)
+                    .orElseThrow(() -> new IllegalArgumentException("Answer not found with id: " + answerId));
+            
+            answer.updateEvaluation(feedback);
+            answerRepository.save(answer);
+            
+            log.info("Evaluation completed and saved for answer ID: {}", answerId);
+        } else {
+            log.warn("Evaluation returned null for answer ID: {}", answerId);
         }
     }
 
