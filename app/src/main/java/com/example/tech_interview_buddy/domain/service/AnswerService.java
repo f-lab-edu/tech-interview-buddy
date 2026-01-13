@@ -47,12 +47,8 @@ public class AnswerService {
                 .build();
 
         answer = answerRepository.save(answer);
-
-        String feedback = answerEvaluationService.evaluateAnswer(question, content);
-        if (feedback != null) {
-            answer.updateEvaluation(feedback);
-            answer = answerRepository.save(answer);
-        }
+        answerRepository.flush();
+        answerEvaluationService.evaluateAnswerAsync(answer.getId(), question, content);
 
         return answer;
     }
