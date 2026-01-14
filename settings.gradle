@@ -1,1 +1,10 @@
 rootProject.name = 'tech-interview-buddy'
+
+include 'app'
+include 'common'
+include 'recommend'
+
+project(':app').projectDir = file('app')
+project(':common').projectDir = file('common')
+project(':recommend').projectDir = file('recommend')
+

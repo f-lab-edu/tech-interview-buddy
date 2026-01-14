@@ -1,0 +1,24 @@
+plugins {
+	id 'org.springframework.boot' version '3.5.3'
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+}
+
+springBoot {
+	mainClass = 'com.example.tech_interview_buddy.recommend.RecommendServiceApplication'
+}
+
+jar {
+	enabled = false
+}
+
+bootJar {
+	enabled = true
+	archiveBaseName = 'tech-interview-buddy-recommend'
+	archiveVersion = '0.0.1-SNAPSHOT'
+}
+
