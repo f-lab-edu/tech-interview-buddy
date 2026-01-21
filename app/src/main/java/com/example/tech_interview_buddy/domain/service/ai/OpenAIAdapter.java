@@ -97,13 +97,17 @@ public class OpenAIAdapter implements AiAdapter {
 
     private String extractContent(ResponseEntity<ChatCompletionResponse> response) {
         ChatCompletionResponse body = response.getBody();
-        if (body != null &&
-                body.getChoices() != null &&
-                !body.getChoices().isEmpty()) {
-            return body.getChoices().get(0).getMessage().getContent();
+        if (body == null) {
+            log.warn("Empty response from OpenAI API");
+            return null;
         }
-        log.warn("Empty response from OpenAI API");
-        return null;
+        
+        List<ChatCompletionResponse.Choice> choices = body.getChoices();
+        if (choices == null || choices.isEmpty()) {
+            log.warn("No choices in response from OpenAI API");
+            return null;
+        }
+        return choices.get(0).getMessage().getContent();
     }
 
     private void handleHttpClientError(HttpClientErrorException e) {
