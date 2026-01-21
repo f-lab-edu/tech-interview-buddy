@@ -7,10 +7,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 
 import java.util.List;
 import java.util.Map;
@@ -35,41 +38,40 @@ public class OpenAIAdapter implements AiAdapter {
         }
 
         try {
-            String url = openAiConfig.getApiUrl();
-
-            HttpHeaders headers = createHeaders();
-            Map<String, Object> requestBody = createRequestBody(prompt);
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
-
-            log.debug("Calling OpenAI API: {}", url);
-            log.debug("Request body: {}", requestBody);
-
-            ResponseEntity<ChatCompletionResponse> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.POST,
-                    request,
-                    ChatCompletionResponse.class
-            );
-
-            log.debug("OpenAI API response status: {}", response.getStatusCode());
-            log.debug("OpenAI API response body: {}", response.getBody());
-
+            ResponseEntity<ChatCompletionResponse> response = callOpenAiApi(prompt);
             return extractContent(response);
-
-        } catch (org.springframework.web.client.HttpClientErrorException e) {
+        } catch (HttpClientErrorException e) {
             handleHttpClientError(e);
             return null;
-        } catch (org.springframework.web.client.RestClientException e) {
+        } catch (RestClientException e) {
             log.error("RestClientException while calling OpenAI API", e);
             return null;
         } catch (Exception e) {
             log.error("Unexpected error while calling OpenAI API", e);
-            log.error("Error class: {}, message: {}", e.getClass().getName(), e.getMessage());
-            if (e.getCause() != null) {
-                log.error("Cause: {}", e.getCause().getMessage());
-            }
             return null;
         }
+    }
+
+    private ResponseEntity<ChatCompletionResponse> callOpenAiApi(String prompt) {
+        String url = openAiConfig.getApiUrl();
+        HttpHeaders headers = createHeaders();
+        Map<String, Object> requestBody = createRequestBody(prompt);
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+        log.debug("Calling OpenAI API: {}", url);
+        log.debug("Request body: {}", requestBody);
+
+        ResponseEntity<ChatCompletionResponse> response = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                request,
+                ChatCompletionResponse.class
+        );
+
+        log.debug("OpenAI API response status: {}", response.getStatusCode());
+        log.debug("OpenAI API response body: {}", response.getBody());
+
+        return response;
     }
 
     private HttpHeaders createHeaders() {
@@ -104,16 +106,18 @@ public class OpenAIAdapter implements AiAdapter {
         return null;
     }
 
-    private void handleHttpClientError(org.springframework.web.client.HttpClientErrorException e) {
-        if (e.getStatusCode().value() == 429) {
+    private void handleHttpClientError(HttpClientErrorException e) {
+        HttpStatus status = HttpStatus.resolve(e.getStatusCode().value());
+
+        if (status == HttpStatus.TOO_MANY_REQUESTS) {
             log.error("OpenAI API quota exceeded (429 Too Many Requests). " +
                     "Please check your OpenAI plan and billing details.");
-        } else if (e.getStatusCode().value() == 401) {
+        } else if (status == HttpStatus.UNAUTHORIZED) {
             log.error("OpenAI API authentication failed (401 Unauthorized). " +
                     "Please check your API key.");
         } else {
             log.error("OpenAI API HTTP error ({}): {}",
-                    e.getStatusCode().value(), e.getMessage());
+                    status.value(), e.getMessage());
         }
         log.error("Response body: {}", e.getResponseBodyAsString());
     }
