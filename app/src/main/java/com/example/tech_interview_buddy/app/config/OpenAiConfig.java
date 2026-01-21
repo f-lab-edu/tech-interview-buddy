@@ -13,7 +13,7 @@ public class OpenAiConfig {
     @Value("${openai.api.key:}")
     private String apiKey;
 
-    @Value("${openai.api.url:https://api.openai.com/v1}")
+    @Value("${openai.api.url:https://api.openai.com/v1/chat/completions}")
     private String apiUrl;
 
     public boolean isConfigured() {
