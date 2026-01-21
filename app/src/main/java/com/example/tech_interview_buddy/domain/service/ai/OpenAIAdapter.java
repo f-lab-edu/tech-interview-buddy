@@ -78,9 +78,7 @@ public class OpenAIAdapter implements AiAdapter {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         String apiKey = openAiConfig.getApiKey();
-        if (apiKey != null) {
-            headers.setBearerAuth(apiKey);
-        }
+        headers.setBearerAuth(apiKey);
         return headers;
     }
 
