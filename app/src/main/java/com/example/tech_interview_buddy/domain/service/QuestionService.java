@@ -1,5 +1,9 @@
 package com.example.tech_interview_buddy.domain.service;
 
+import com.example.tech_interview_buddy.app.client.RecommendServiceClient;
+import com.example.tech_interview_buddy.app.dto.external.RecommendRequest;
+import com.example.tech_interview_buddy.app.dto.external.RecommendResponse;
+import com.example.tech_interview_buddy.app.dto.external.RecommendedQuestion;
 import com.example.tech_interview_buddy.common.domain.Category;
 import com.example.tech_interview_buddy.domain.Answer;
 import com.example.tech_interview_buddy.domain.Question;
@@ -34,6 +38,7 @@ public class QuestionService {
     private final AnswerService answerService;
     private final QuestionCountService questionCountService;
     private final QuestionTagRepository questionTagRepository;
+    private final RecommendServiceClient recommendServiceClient;
 
     public Question findById(Long id) {
         return questionRepository.findById(id)
@@ -96,10 +101,36 @@ public class QuestionService {
         return result;
     }
 
+    public QuestionSearchWithRecommendResult searchQuestionsWithRecommend(
+            QuestionSearchSpec spec,
+            Long currentUserId,
+            Category category,
+            List<String> tags) {
+
+        Page<QuestionSearchResult> searchResults = searchQuestions(spec, currentUserId);
+
+        RecommendRequest recommendRequest = RecommendRequest.builder()
+            .category(category != null ? category.toString() : null)
+            .tags(tags)
+            .build();
+
+        RecommendResponse recommendResponse = recommendServiceClient.callRecommendService(recommendRequest);
+
+        List<RecommendedQuestion> recommendedQuestions =
+            Optional.ofNullable(recommendResponse)
+                .map(RecommendResponse::getRecommendedQuestions)
+                .orElse(Collections.emptyList());
+
+        return QuestionSearchWithRecommendResult.builder()
+            .searchResults(searchResults)
+            .recommendedQuestions(recommendedQuestions)
+            .build();
+    }
+
     public QuestionWithAnswer findQuestionWithAnswer(Long questionId, Long userId) {
         Question question = findById(questionId);
         Optional<Answer> answer = answerService.getMyAnswer(questionId, userId);
-        
+
         return QuestionWithAnswer.builder()
             .question(question)
             .answer(answer.orElse(null))
