@@ -55,6 +55,7 @@ public class QuestionService {
 
         List<Long> questionIds = extractQuestionIds(questions);
 
+        Set<Long> solvedQuestionIds = getSolvedQuestionIds(currentUserId, questionIds);
 
         List<QuestionTag> questionTags = Collections.emptyList();
         if (!questionIds.isEmpty()) {
@@ -164,5 +165,16 @@ public class QuestionService {
         return questions.getContent().stream()
             .map(Question::getId)
             .toList();
+    }
+
+    private Set<Long> getSolvedQuestionIds(Long currentUserId, List<Long> questionIds) {
+        if (questionIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        return answerService.getSolvedQuestionIdsByUserAndQuestions(
+            currentUserId,
+            questionIds
+        );
     }
 }
