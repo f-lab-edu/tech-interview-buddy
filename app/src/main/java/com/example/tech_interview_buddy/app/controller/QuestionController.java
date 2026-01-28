@@ -48,14 +48,7 @@ public class QuestionController {
             );
         
         List<QuestionListResponse> contents = result.getSearchResults().getContent().stream()
-            .map(item -> QuestionListResponse.builder()
-                .id(item.getQuestion().getId())
-                .content(item.getQuestion().getContent())
-                .category(item.getQuestion().getCategory())
-                .isSolved(item.isSolved())
-                .createdAt(item.getQuestion().getCreatedAt())
-                .tags(item.getTags())
-                .build())
+            .map(this::toQuestionListResponse)
             .toList();
         
         // QuestionSearchResponse 생성
@@ -87,14 +80,7 @@ public class QuestionController {
         Page<QuestionSearchResult> results = questionService.searchQuestions(spec, currentUserId);
         
         // Domain → DTO 변환
-        return results.map(result -> QuestionListResponse.builder()
-            .id(result.getQuestion().getId())
-            .content(result.getQuestion().getContent())
-            .category(result.getQuestion().getCategory())
-            .isSolved(result.isSolved())
-            .createdAt(result.getQuestion().getCreatedAt())
-            .tags(result.getTags())
-            .build());
+        return results.map(this::toQuestionListResponse);
     }
 
     @GetMapping("/{id}")
@@ -189,6 +175,18 @@ public class QuestionController {
     private Long getCurrentUserId(HttpServletRequest request) {
         User user = (User) request.getAttribute("currentUser");
         return user != null ? user.getId() : null;
+    }
+
+
+    private QuestionListResponse toQuestionListResponse(QuestionSearchResult result) {
+        return QuestionListResponse.builder()
+            .id(result.getQuestion().getId())
+            .content(result.getQuestion().getContent())
+            .category(result.getQuestion().getCategory())
+            .isSolved(result.isSolved())
+            .createdAt(result.getQuestion().getCreatedAt())
+            .tags(result.getTags())
+            .build();
     }
 
 }
