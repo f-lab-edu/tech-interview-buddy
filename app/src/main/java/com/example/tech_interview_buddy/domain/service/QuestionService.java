@@ -4,7 +4,6 @@ import com.example.tech_interview_buddy.common.domain.Category;
 import com.example.tech_interview_buddy.domain.Answer;
 import com.example.tech_interview_buddy.domain.Question;
 import com.example.tech_interview_buddy.domain.QuestionTag;
-import com.example.tech_interview_buddy.domain.User;
 import com.example.tech_interview_buddy.domain.spec.QuestionSearchSpec;
 import com.example.tech_interview_buddy.domain.repository.QuestionRepository;
 import com.example.tech_interview_buddy.domain.repository.QuestionTagRepository;
@@ -41,10 +40,6 @@ public class QuestionService {
             .orElseThrow(() -> new IllegalArgumentException("Question not found with id: " + id));
     }
 
-    /**
-     * 동적 쿼리를 사용한 통합 검색 메서드
-     * Domain 기반 검색 결과 반환 (DTO 변환은 API 계층에서 처리)
-     */
     public Page<QuestionSearchResult> searchQuestions(QuestionSearchSpec spec, Long currentUserId) {
         long startTime = System.currentTimeMillis();
 
@@ -55,17 +50,14 @@ public class QuestionService {
         long countTime = System.currentTimeMillis();
         log.debug("COUNT 조회 시간 (캐시): {}ms", countTime - startTime);
 
-        // 질문 조회
         Page<Question> questions = questionRepository.searchQuestions(spec, pageable, currentUserId);
         long queryTime = System.currentTimeMillis();
         log.debug("DB 쿼리 시간: {}ms", queryTime - countTime);
 
-        // Question ID 추출 (결과 20개만)
         List<Long> questionIds = questions.getContent().stream()
             .map(Question::getId)
             .toList();
 
-        // 🚀 성능 최적화: 조회된 20개 질문에 대해서만 Solved 여부 확인
         Set<Long> solvedQuestionIds = answerService.getSolvedQuestionIdsByUserAndQuestions(
             currentUserId, 
             questionIds
@@ -73,7 +65,6 @@ public class QuestionService {
         long solvedIdsTime = System.currentTimeMillis();
         log.debug("Solved IDs 조회 시간 (최적화): {}ms", solvedIdsTime - queryTime);
         
-        // QuestionTag 배치 조회 (IN 쿼리 1번) - 120만 레코드 JOIN 제거!
         List<QuestionTag> questionTags = Collections.emptyList();
         if (!questionIds.isEmpty()) {
             questionTags = questionTagRepository.findByQuestionIdsWithTag(questionIds);
@@ -81,14 +72,12 @@ public class QuestionService {
         long tagTime = System.currentTimeMillis();
         log.debug("태그 배치 조회 시간: {}ms", tagTime - solvedIdsTime);
         
-        // Question ID별로 태그 그룹화 (메모리에서)
         Map<Long, List<String>> questionTagMap = questionTags.stream()
             .collect(Collectors.groupingBy(
                 qt -> qt.getQuestion().getId(),
                 Collectors.mapping(qt -> qt.getTag().getName(), Collectors.toList())
             ));
 
-        // QuestionSearchResult로 변환
         List<QuestionSearchResult> content = questions.getContent().stream()
             .map(question -> QuestionSearchResult.builder()
                 .question(question)
