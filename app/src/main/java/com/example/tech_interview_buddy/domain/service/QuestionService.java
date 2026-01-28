@@ -9,6 +9,7 @@ import com.example.tech_interview_buddy.domain.spec.QuestionSearchSpec;
 import com.example.tech_interview_buddy.domain.repository.QuestionRepository;
 import com.example.tech_interview_buddy.domain.repository.QuestionTagRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class QuestionService {
 
     private final QuestionRepository questionRepository;
@@ -51,12 +53,12 @@ public class QuestionService {
         // 캐싱된 총 개수 조회 (1시간마다 갱신)
         long totalCount = questionCountService.getTotalCount(spec, currentUserId);
         long countTime = System.currentTimeMillis();
-        System.out.println("COUNT 조회 시간 (캐시): " + (countTime - startTime) + "ms");
+        log.debug("COUNT 조회 시간 (캐시): {}ms", countTime - startTime);
 
         // 질문 조회
         Page<Question> questions = questionRepository.searchQuestions(spec, pageable, currentUserId);
         long queryTime = System.currentTimeMillis();
-        System.out.println("DB 쿼리 시간: " + (queryTime - countTime) + "ms");
+        log.debug("DB 쿼리 시간: {}ms", queryTime - countTime);
 
         // Question ID 추출 (결과 20개만)
         List<Long> questionIds = questions.getContent().stream()
@@ -69,7 +71,7 @@ public class QuestionService {
             questionIds
         );
         long solvedIdsTime = System.currentTimeMillis();
-        System.out.println("Solved IDs 조회 시간 (최적화): " + (solvedIdsTime - queryTime) + "ms");
+        log.debug("Solved IDs 조회 시간 (최적화): {}ms", solvedIdsTime - queryTime);
         
         // QuestionTag 배치 조회 (IN 쿼리 1번) - 120만 레코드 JOIN 제거!
         List<QuestionTag> questionTags = Collections.emptyList();
@@ -77,7 +79,7 @@ public class QuestionService {
             questionTags = questionTagRepository.findByQuestionIdsWithTag(questionIds);
         }
         long tagTime = System.currentTimeMillis();
-        System.out.println("태그 배치 조회 시간: " + (tagTime - solvedIdsTime) + "ms");
+        log.debug("태그 배치 조회 시간: {}ms", tagTime - solvedIdsTime);
         
         // Question ID별로 태그 그룹화 (메모리에서)
         Map<Long, List<String>> questionTagMap = questionTags.stream()
@@ -98,8 +100,9 @@ public class QuestionService {
         Page<QuestionSearchResult> result = new PageImpl<>(content, pageable, totalCount);
         
         long conversionTime = System.currentTimeMillis();
-        System.out.println("결과 변환 시간: " + (conversionTime - tagTime) + "ms");
-        System.out.println("Service 총 시간: " + (conversionTime - startTime) + "ms");
+        log.debug("결과 변환 시간: {}ms", conversionTime - tagTime);
+        log.info("질문 검색 완료 - 총 {}개 결과, 총 소요 시간: {}ms",
+            result.getTotalElements(), conversionTime - startTime);
 
         return result;
     }
