@@ -59,9 +59,7 @@ public class QuestionService {
         long queryTime = System.currentTimeMillis();
         log.debug("DB 쿼리 시간: {}ms", queryTime - countTime);
 
-        List<Long> questionIds = questions.getContent().stream()
-            .map(Question::getId)
-            .toList();
+        List<Long> questionIds = extractQuestionIds(questions);
 
         Set<Long> solvedQuestionIds = answerService.getSolvedQuestionIdsByUserAndQuestions(
             currentUserId,
@@ -178,5 +176,12 @@ public class QuestionService {
             spec.getSize(),
             Sort.by(sortDirection, spec.getSortField())
         );
+    }
+
+
+    private List<Long> extractQuestionIds(Page<Question> questions) {
+        return questions.getContent().stream()
+            .map(Question::getId)
+            .toList();
     }
 }
