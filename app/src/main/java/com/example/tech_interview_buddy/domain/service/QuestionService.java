@@ -46,34 +46,20 @@ public class QuestionService {
     }
 
     public Page<QuestionSearchResult> searchQuestions(QuestionSearchSpec spec, Long currentUserId) {
-        long startTime = System.currentTimeMillis();
-
         Pageable pageable = createPageable(spec);
 
         // 캐싱된 총 개수 조회 (1시간마다 갱신)
         long totalCount = questionCountService.getTotalCount(spec, currentUserId);
-        long countTime = System.currentTimeMillis();
-        log.debug("COUNT 조회 시간 (캐시): {}ms", countTime - startTime);
 
         Page<Question> questions = questionRepository.searchQuestions(spec, pageable, currentUserId);
-        long queryTime = System.currentTimeMillis();
-        log.debug("DB 쿼리 시간: {}ms", queryTime - countTime);
 
         List<Long> questionIds = extractQuestionIds(questions);
 
-        Set<Long> solvedQuestionIds = answerService.getSolvedQuestionIdsByUserAndQuestions(
-            currentUserId,
-            questionIds
-        );
-        long solvedIdsTime = System.currentTimeMillis();
-        log.debug("Solved IDs 조회 시간 (최적화): {}ms", solvedIdsTime - queryTime);
 
         List<QuestionTag> questionTags = Collections.emptyList();
         if (!questionIds.isEmpty()) {
             questionTags = questionTagRepository.findByQuestionIdsWithTag(questionIds);
         }
-        long tagTime = System.currentTimeMillis();
-        log.debug("태그 배치 조회 시간: {}ms", tagTime - solvedIdsTime);
 
         Map<Long, List<String>> questionTagMap = questionTags.stream()
             .collect(Collectors.groupingBy(
@@ -90,11 +76,6 @@ public class QuestionService {
             .toList();
 
         Page<QuestionSearchResult> result = new PageImpl<>(content, pageable, totalCount);
-
-        long conversionTime = System.currentTimeMillis();
-        log.debug("결과 변환 시간: {}ms", conversionTime - tagTime);
-        log.info("질문 검색 완료 - 총 {}개 결과, 총 소요 시간: {}ms",
-            result.getTotalElements(), conversionTime - startTime);
 
         return result;
     }
