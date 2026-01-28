@@ -64,19 +64,19 @@ public class QuestionService {
             .toList();
 
         Set<Long> solvedQuestionIds = answerService.getSolvedQuestionIdsByUserAndQuestions(
-            currentUserId, 
+            currentUserId,
             questionIds
         );
         long solvedIdsTime = System.currentTimeMillis();
         log.debug("Solved IDs 조회 시간 (최적화): {}ms", solvedIdsTime - queryTime);
-        
+
         List<QuestionTag> questionTags = Collections.emptyList();
         if (!questionIds.isEmpty()) {
             questionTags = questionTagRepository.findByQuestionIdsWithTag(questionIds);
         }
         long tagTime = System.currentTimeMillis();
         log.debug("태그 배치 조회 시간: {}ms", tagTime - solvedIdsTime);
-        
+
         Map<Long, List<String>> questionTagMap = questionTags.stream()
             .collect(Collectors.groupingBy(
                 qt -> qt.getQuestion().getId(),
@@ -90,9 +90,9 @@ public class QuestionService {
                 .tags(questionTagMap.getOrDefault(question.getId(), Collections.emptyList()))
                 .build())
             .toList();
-        
+
         Page<QuestionSearchResult> result = new PageImpl<>(content, pageable, totalCount);
-        
+
         long conversionTime = System.currentTimeMillis();
         log.debug("결과 변환 시간: {}ms", conversionTime - tagTime);
         log.info("질문 검색 완료 - 총 {}개 결과, 총 소요 시간: {}ms",
@@ -149,7 +149,7 @@ public class QuestionService {
             .content(content)
             .category(category)
             .build();
-        
+
         return questionRepository.save(question);
     }
 
@@ -170,12 +170,12 @@ public class QuestionService {
     }
 
     private Pageable createPageable(QuestionSearchSpec spec) {
-        Sort.Direction sortDirection = "asc".equalsIgnoreCase(spec.getSortDirection()) 
-            ? Sort.Direction.ASC 
+        Sort.Direction sortDirection = "asc".equalsIgnoreCase(spec.getSortDirection())
+            ? Sort.Direction.ASC
             : Sort.Direction.DESC;
         return PageRequest.of(
-            spec.getPage(), 
-            spec.getSize(), 
+            spec.getPage(),
+            spec.getSize(),
             Sort.by(sortDirection, spec.getSortField())
         );
     }
