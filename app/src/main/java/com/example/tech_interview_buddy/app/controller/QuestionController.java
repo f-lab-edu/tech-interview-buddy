@@ -12,6 +12,7 @@ import com.example.tech_interview_buddy.app.dto.response.QuestionSearchResponse;
 import com.example.tech_interview_buddy.domain.service.QuestionService;
 import com.example.tech_interview_buddy.domain.service.QuestionSearchResult;
 import com.example.tech_interview_buddy.domain.service.QuestionWithAnswer;
+import com.example.tech_interview_buddy.domain.service.QuestionSearchWithRecommendResult;
 import com.example.tech_interview_buddy.domain.spec.QuestionSearchSpec;
 import com.example.tech_interview_buddy.domain.User;
 import com.example.tech_interview_buddy.app.dto.enums.SortDirection;
@@ -38,36 +39,29 @@ public class QuestionController {
         
         QuestionSearchSpec spec = toSpec(searchRequest);
         
-        Page<QuestionSearchResult> results = questionService.searchQuestions(spec, currentUserId);
+        QuestionSearchWithRecommendResult result =
+            questionService.searchQuestionsWithRecommend(
+                spec,
+                currentUserId,
+                searchRequest.getCategory(),
+                searchRequest.getTags()
+            );
         
-        // Recommend 서비스 호출 (타임아웃 3초, 실패 시 빈 배열)
-        RecommendRequest recommendRequest = RecommendRequest.builder()
-            .category(searchRequest.getCategory() != null ? searchRequest.getCategory().toString() : null)
-            .tags(searchRequest.getTags())
-            .build();
-        
-        RecommendResponse recommendResponse = recommendServiceClient.callRecommendService(recommendRequest);
-        java.util.List<com.example.tech_interview_buddy.app.dto.external.RecommendedQuestion> recommendedQuestions = 
-            (recommendResponse != null && recommendResponse.getRecommendedQuestions() != null)
-                ? recommendResponse.getRecommendedQuestions()
-                : java.util.Collections.emptyList();
-        
-        // Domain → DTO 변환 (contents 배열 생성)
-        List<QuestionListResponse> contents = results.getContent().stream()
-            .map(result -> QuestionListResponse.builder()
-                .id(result.getQuestion().getId())
-                .content(result.getQuestion().getContent())
-                .category(result.getQuestion().getCategory())
-                .isSolved(result.isSolved())
-                .createdAt(result.getQuestion().getCreatedAt())
-                .tags(result.getTags())
+        List<QuestionListResponse> contents = result.getSearchResults().getContent().stream()
+            .map(item -> QuestionListResponse.builder()
+                .id(item.getQuestion().getId())
+                .content(item.getQuestion().getContent())
+                .category(item.getQuestion().getCategory())
+                .isSolved(item.isSolved())
+                .createdAt(item.getQuestion().getCreatedAt())
+                .tags(item.getTags())
                 .build())
             .toList();
         
-        // QuestionSearchResponse 생성 (contents와 recommendations를 동일한 레벨에 배치)
+        // QuestionSearchResponse 생성
         return QuestionSearchResponse.builder()
             .contents(contents)
-            .recommendations(recommendedQuestions)
+            .recommendations(result.getRecommendedQuestions())
             .build();
     }
 
