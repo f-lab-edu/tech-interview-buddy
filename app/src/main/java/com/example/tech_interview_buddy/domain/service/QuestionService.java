@@ -59,13 +59,11 @@ public class QuestionService {
 
         Map<Long, List<String>> questionTagMap = getQuestionTagMap(questionIds);
 
-        List<QuestionSearchResult> content = questions.getContent().stream()
-            .map(question -> QuestionSearchResult.builder()
-                .question(question)
-                .isSolved(solvedQuestionIds.contains(question.getId()))
-                .tags(questionTagMap.getOrDefault(question.getId(), Collections.emptyList()))
-                .build())
-            .toList();
+        List<QuestionSearchResult> content = convertToQuestionSearchResults(
+            questions.getContent(),
+            solvedQuestionIds,
+            questionTagMap
+        );
 
         Page<QuestionSearchResult> result = new PageImpl<>(content, pageable, totalCount);
 
@@ -190,5 +188,18 @@ public class QuestionService {
                 qt -> qt.getQuestion().getId(),
                 Collectors.mapping(qt -> qt.getTag().getName(), Collectors.toList())
             ));
+    }
+
+    private List<QuestionSearchResult> convertToQuestionSearchResults(
+            List<Question> questions,
+            Set<Long> solvedQuestionIds,
+            Map<Long, List<String>> questionTagMap) {
+        return questions.stream()
+            .map(question -> QuestionSearchResult.builder()
+                .question(question)
+                .isSolved(solvedQuestionIds.contains(question.getId()))
+                .tags(questionTagMap.getOrDefault(question.getId(), Collections.emptyList()))
+                .build())
+            .toList();
     }
 }
