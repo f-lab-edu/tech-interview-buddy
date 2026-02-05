@@ -57,16 +57,7 @@ public class QuestionService {
 
         Set<Long> solvedQuestionIds = getSolvedQuestionIds(currentUserId, questionIds);
 
-        List<QuestionTag> questionTags = Collections.emptyList();
-        if (!questionIds.isEmpty()) {
-            questionTags = questionTagRepository.findByQuestionIdsWithTag(questionIds);
-        }
-
-        Map<Long, List<String>> questionTagMap = questionTags.stream()
-            .collect(Collectors.groupingBy(
-                qt -> qt.getQuestion().getId(),
-                Collectors.mapping(qt -> qt.getTag().getName(), Collectors.toList())
-            ));
+        Map<Long, List<String>> questionTagMap = getQuestionTagMap(questionIds);
 
         List<QuestionSearchResult> content = questions.getContent().stream()
             .map(question -> QuestionSearchResult.builder()
@@ -105,6 +96,15 @@ public class QuestionService {
             .searchResults(searchResults)
             .recommendedQuestions(recommendedQuestions)
             .build();
+    }
+
+    public RecommendResponse getRecommendResponse(Category category, List<String> tags) {
+        RecommendRequest recommendRequest = RecommendRequest.builder()
+            .category(category != null ? category.toString() : null)
+            .tags(tags)
+            .build();
+
+        return recommendServiceClient.callRecommendService(recommendRequest);
     }
 
     public QuestionWithAnswer findQuestionWithAnswer(Long questionId, Long userId) {
@@ -176,5 +176,19 @@ public class QuestionService {
             currentUserId,
             questionIds
         );
+    }
+
+     private Map<Long, List<String>> getQuestionTagMap(List<Long> questionIds) {
+        if (questionIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<QuestionTag> questionTags = questionTagRepository.findByQuestionIdsWithTag(questionIds);
+
+        return questionTags.stream()
+            .collect(Collectors.groupingBy(
+                qt -> qt.getQuestion().getId(),
+                Collectors.mapping(qt -> qt.getTag().getName(), Collectors.toList())
+            ));
     }
 }

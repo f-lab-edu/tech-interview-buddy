@@ -1,7 +1,5 @@
 package com.example.tech_interview_buddy.app.controller;
 
-import com.example.tech_interview_buddy.app.client.RecommendServiceClient;
-import com.example.tech_interview_buddy.app.dto.external.RecommendRequest;
 import com.example.tech_interview_buddy.app.dto.external.RecommendResponse;
 import com.example.tech_interview_buddy.app.dto.request.QuestionCreateRequest;
 import com.example.tech_interview_buddy.app.dto.request.QuestionSearchRequest;
@@ -32,7 +30,6 @@ import java.util.List;
 public class QuestionController {
 
     private final QuestionService questionService;
-    private final RecommendServiceClient recommendServiceClient;
     private final QuestionMapper questionMapper;
 
     @PostMapping("/search")
@@ -118,12 +115,10 @@ public class QuestionController {
         com.example.tech_interview_buddy.domain.Question question = 
             questionService.createQuestion(request.getContent(), request.getCategory());
         
-        RecommendRequest recommendRequest = RecommendRequest.builder()
-            .category(request.getCategory() != null ? request.getCategory().toString() : null)
-            .tags(request.getTags())
-            .build();
-        
-        RecommendResponse recommendResponse = recommendServiceClient.callRecommendService(recommendRequest);
+        RecommendResponse recommendResponse = questionService.getRecommendResponse(
+            request.getCategory(),
+            request.getTags()
+        );
         
         // Domain → DTO 변환
         return QuestionDetailResponse.builder()
