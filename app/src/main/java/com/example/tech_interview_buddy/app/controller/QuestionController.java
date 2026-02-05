@@ -9,6 +9,7 @@ import com.example.tech_interview_buddy.app.dto.request.QuestionUpdateRequest;
 import com.example.tech_interview_buddy.app.dto.response.QuestionDetailResponse;
 import com.example.tech_interview_buddy.app.dto.response.QuestionListResponse;
 import com.example.tech_interview_buddy.app.dto.response.QuestionSearchResponse;
+import com.example.tech_interview_buddy.app.mapper.QuestionMapper;
 import com.example.tech_interview_buddy.domain.service.QuestionService;
 import com.example.tech_interview_buddy.domain.service.QuestionSearchResult;
 import com.example.tech_interview_buddy.domain.service.QuestionWithAnswer;
@@ -32,6 +33,7 @@ public class QuestionController {
 
     private final QuestionService questionService;
     private final RecommendServiceClient recommendServiceClient;
+    private final QuestionMapper questionMapper;
 
     @PostMapping("/search")
     public QuestionSearchResponse searchQuestions(@RequestBody QuestionSearchRequest searchRequest, HttpServletRequest request) {
@@ -47,9 +49,9 @@ public class QuestionController {
                 searchRequest.getTags()
             );
         
-        List<QuestionListResponse> contents = result.getSearchResults().getContent().stream()
-            .map(this::toQuestionListResponse)
-            .toList();
+        List<QuestionListResponse> contents = questionMapper.toQuestionListResponseList(
+            result.getSearchResults().getContent()
+        );
         
         // QuestionSearchResponse 생성
         return QuestionSearchResponse.builder()
@@ -80,7 +82,7 @@ public class QuestionController {
         Page<QuestionSearchResult> results = questionService.searchQuestions(spec, currentUserId);
         
         // Domain → DTO 변환
-        return results.map(this::toQuestionListResponse);
+        return results.map(questionMapper::toQuestionListResponse);
     }
 
     @GetMapping("/{id}")
@@ -177,16 +179,5 @@ public class QuestionController {
         return user != null ? user.getId() : null;
     }
 
-
-    private QuestionListResponse toQuestionListResponse(QuestionSearchResult result) {
-        return QuestionListResponse.builder()
-            .id(result.getQuestion().getId())
-            .content(result.getQuestion().getContent())
-            .category(result.getQuestion().getCategory())
-            .isSolved(result.isSolved())
-            .createdAt(result.getQuestion().getCreatedAt())
-            .tags(result.getTags())
-            .build();
-    }
 
 }
