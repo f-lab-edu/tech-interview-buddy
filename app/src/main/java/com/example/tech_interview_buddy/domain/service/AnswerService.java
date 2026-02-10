@@ -79,7 +79,7 @@ public class AnswerService {
     }
 
     public Optional<Answer> getMyAnswer(Long questionId, Long userId) {
-        return answerRepository.findByUserIdAndQuestionId(userId, questionId);
+        return answerRepository.findTopByUserIdAndQuestionIdOrderByCreatedAtDesc(userId, questionId);
     }
 
     public Set<Long> getSolvedQuestionIdsByUserAndQuestions(Long userId, java.util.List<Long> questionIds) {

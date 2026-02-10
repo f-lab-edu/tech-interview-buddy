@@ -12,7 +12,7 @@ import java.util.Set;
 @Repository
 public interface AnswerRepository extends JpaRepository<Answer, Long> {
     
-    Optional<Answer> findByUserIdAndQuestionId(Long userId, Long questionId);
+    Optional<Answer> findTopByUserIdAndQuestionIdOrderByCreatedAtDesc(Long userId, Long questionId);
     
     /**
      * 사용자가 풀은 문제 ID들을 조회 (성능 최적화를 위해 ID만 조회)
