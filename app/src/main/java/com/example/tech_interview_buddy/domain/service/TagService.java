@@ -35,8 +35,11 @@ public class TagService {
         return tagRepository.findByName(name);
     }
     
-    public List<Tag> findAllTags() {
-        return tagRepository.findAll();
+    public List<String> findAllTags() {
+        return tagRepository.findAll().stream()
+            .map(Tag::getName)
+            .sorted()
+            .toList();
     }
     
     public Tag findOrCreateTag(String name) {
