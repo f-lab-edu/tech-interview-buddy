@@ -57,6 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             // User 엔티티를 먼저 조회 (한 번만 DB 조회)
             User user = userRepository.findByUsername(username)
+                .or(() -> userRepository.findByEmail(username))
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
             long userEntityTime = System.currentTimeMillis();
             log.debug("User 엔티티 로딩 시간: {}ms", userEntityTime - usernameExtractTime);
