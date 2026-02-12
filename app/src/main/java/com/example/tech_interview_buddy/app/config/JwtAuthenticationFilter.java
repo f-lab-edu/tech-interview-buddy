@@ -9,9 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import com.example.tech_interview_buddy.domain.repository.UserRepository;
 import com.example.tech_interview_buddy.domain.User;
+import com.example.tech_interview_buddy.domain.service.UserService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -27,8 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final int BEARER_PREFIX_LENGTH = 7;
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserDetailsService userDetailsService;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -55,10 +53,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             long usernameExtractTime = System.currentTimeMillis();
             log.debug("사용자명 추출 시간: {}ms", usernameExtractTime - jwtExtractTime);
             
-            // User 엔티티를 먼저 조회 (한 번만 DB 조회)
-            User user = userRepository.findByUsername(username)
-                .or(() -> userRepository.findByEmail(username))
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            User user = userService.findByUsernameOrEmail(username);
             long userEntityTime = System.currentTimeMillis();
             log.debug("User 엔티티 로딩 시간: {}ms", userEntityTime - usernameExtractTime);
             

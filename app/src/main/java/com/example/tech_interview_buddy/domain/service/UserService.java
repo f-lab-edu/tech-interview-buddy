@@ -39,8 +39,10 @@ public class UserService {
         }
     }
     
-    public Optional<User> findByUsername(String username) {
-        return userRepository.findByUsername(username);
+    public User findByUsernameOrEmail(String identifier) {
+        return userRepository.findByUsername(identifier)
+                .or(() -> userRepository.findByEmail(identifier))
+                .orElseThrow(() -> new IllegalArgumentException("User not found with username/email: " + identifier));
     }
     
     public User findById(Long userId) {
