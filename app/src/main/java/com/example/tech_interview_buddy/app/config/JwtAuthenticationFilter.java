@@ -7,8 +7,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import com.example.tech_interview_buddy.domain.User;
 import com.example.tech_interview_buddy.domain.service.UserService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collections;
 
 @Slf4j
 @Component
@@ -56,23 +57,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             User user = userService.findByUsernameOrEmail(username);
             long userEntityTime = System.currentTimeMillis();
             log.debug("User 엔티티 로딩 시간: {}ms", userEntityTime - usernameExtractTime);
-            
-            // UserDetails는 User 엔티티에서 직접 생성 (DB 조회 없음)
-            UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
-                .username(user.getUsername())
-                .password(user.getPassword())
-                .authorities(user.getRole().name())
-                .build();
-            long userDetailsTime = System.currentTimeMillis();
-            log.debug("UserDetails 생성 시간: {}ms", userDetailsTime - userEntityTime);
 
             UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(userDetails, null,
-                    userDetails.getAuthorities());
+                new UsernamePasswordAuthenticationToken(
+                    user,
+                    null,
+                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+                );
             authentication.setDetails(
                 new WebAuthenticationDetailsSource().buildDetails(request));
             
-            // User 엔티티를 SecurityContext에 추가로 저장
             SecurityContextHolder.getContext().setAuthentication(authentication);
             request.setAttribute("currentUser", user);
             
