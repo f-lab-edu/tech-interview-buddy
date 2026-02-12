@@ -46,47 +46,66 @@ public class QuestionRepositoryImpl implements QuestionRepositoryCustom {
 
     @Override
     public Page<Question> searchQuestions(QuestionSearchSpec spec, Pageable pageable, Long currentUserId) {
+        if (hasTagCondition(spec)) {
+            return searchQuestionsWithTags(spec, pageable, currentUserId);
+        }
+        return searchQuestionsWithoutTags(spec, pageable, currentUserId);
+    }
+
+    private boolean hasTagCondition(QuestionSearchSpec spec) {
+        return spec.getTags() != null && !spec.getTags().isEmpty();
+    }
+
+    /**
+     * 태그 조건이 있을 때: 2단계 쿼리 (ID 조회 → 엔티티 조회)
+     */
+    private Page<Question> searchQuestionsWithTags(
+            QuestionSearchSpec spec, Pageable pageable, Long currentUserId) {
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
 
-        // 🚀 2단계 쿼리 최적화: 태그 조건이 있으면 서브쿼리로 ID만 먼저 조회
-        if (spec.getTags() != null && !spec.getTags().isEmpty()) {
-            // 1단계: 모든 조건 + 정렬 + 페이징 적용한 ID 목록 조회
-            List<Long> pagedQuestionIds = findQuestionIdsByConditions(spec, pageable, currentUserId, queryFactory);
+        List<Long> pagedQuestionIds = findQuestionIdsByConditions(spec, pageable, currentUserId, queryFactory);
 
-            // ID가 없으면 빈 결과 반환
-            if (pagedQuestionIds.isEmpty()) {
-                return new PageImpl<>(Collections.emptyList(), pageable, 0);
-            }
-
-            // 2단계: 조회된 ID로 Question 엔티티 가져오기 (정렬 순서 유지)
-            JPAQuery<Question> query = queryFactory.selectFrom(question)
-                    .where(question.id.in(pagedQuestionIds));
-
-            // ID 순서대로 정렬 (1단계 쿼리의 순서 유지)
-            if (pageable.getSort().isSorted()) {
-                pageable.getSort().forEach(order -> {
-                    Function<Boolean, OrderSpecifier<?>> sortFunction = SORT_MAPPINGS.get(order.getProperty());
-                    if (sortFunction != null) {
-                        query.orderBy(sortFunction.apply(order.isAscending()));
-                    }
-                });
-            } else {
-                query.orderBy(question.id.asc());
-            }
-
-            List<Question> questions = query.fetch();
-
-            // hasNextPage는 1단계에서 limit+1로 판단
-            boolean hasNextPage = pagedQuestionIds.size() > pageable.getPageSize();
-
-            return new PageImpl<>(questions, pageable, hasNextPage ? pageable.getOffset() + questions.size() + 1 : pageable.getOffset() + questions.size());
+        if (pagedQuestionIds.isEmpty()) {
+            return new PageImpl<>(Collections.emptyList(), pageable, 0);
         }
 
-        // 태그 조건이 없으면 기존 방식대로
-        JPAQuery<Question> query = queryFactory.selectFrom(question);
-        query.where(buildPredicatesWithoutTags(spec, currentUserId));
+        JPAQuery<Question> query = queryFactory.selectFrom(question)
+                .where(question.id.in(pagedQuestionIds));
 
-        // 정렬
+        applySort(query, pageable);
+
+        List<Question> questions = query.fetch();
+        boolean hasNextPage = pagedQuestionIds.size() > pageable.getPageSize();
+
+        return new PageImpl<>(questions, pageable, hasNextPage ? pageable.getOffset() + questions.size() + 1 : pageable.getOffset() + questions.size());
+    }
+
+    /**
+     * 태그 조건이 없을 때: 단일 쿼리
+     */
+    private Page<Question> searchQuestionsWithoutTags(
+            QuestionSearchSpec spec, Pageable pageable, Long currentUserId) {
+        JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+
+        JPAQuery<Question> query = queryFactory.selectFrom(question)
+                .where(buildPredicatesWithoutTags(spec, currentUserId));
+
+        applySort(query, pageable);
+
+        List<Question> questions = query
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize() + 1)
+                .fetch();
+
+        boolean hasNextPage = questions.size() > pageable.getPageSize();
+        if (hasNextPage) {
+            questions = questions.subList(0, pageable.getPageSize());
+        }
+
+        return new PageImpl<>(questions, pageable, hasNextPage ? pageable.getOffset() + questions.size() + 1 : pageable.getOffset() + questions.size());
+    }
+
+    private void applySort(JPAQuery<?> query, Pageable pageable) {
         if (pageable.getSort().isSorted()) {
             pageable.getSort().forEach(order -> {
                 Function<Boolean, OrderSpecifier<?>> sortFunction = SORT_MAPPINGS.get(order.getProperty());
@@ -99,20 +118,6 @@ public class QuestionRepositoryImpl implements QuestionRepositoryCustom {
         } else {
             query.orderBy(question.id.asc());
         }
-
-        // COUNT 쿼리 제거로 성능 최적화 - 무한 스크롤 방식
-        List<Question> questions = query
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize() + 1)
-                .fetch();
-
-        // hasNextPage 판단 후 실제 size만 반환
-        boolean hasNextPage = questions.size() > pageable.getPageSize();
-        if (hasNextPage) {
-            questions = questions.subList(0, pageable.getPageSize());
-        }
-
-        return new PageImpl<>(questions, pageable, hasNextPage ? pageable.getOffset() + questions.size() + 1 : pageable.getOffset() + questions.size());
     }
 
     /**
@@ -136,24 +141,9 @@ public class QuestionRepositoryImpl implements QuestionRepositoryCustom {
                                 .and(tag.name.in(spec.getTags())))
                         .exists());  // 태그 필터링
 
-        // 나머지 조건들 (카테고리, 키워드, solved 등)
         idQuery.where(buildPredicatesWithoutTags(spec, currentUserId));
+        applySort(idQuery, pageable);
 
-        // 정렬 적용
-        if (pageable.getSort().isSorted()) {
-            pageable.getSort().forEach(order -> {
-                Function<Boolean, OrderSpecifier<?>> sortFunction = SORT_MAPPINGS.get(order.getProperty());
-                if (sortFunction != null) {
-                    idQuery.orderBy(sortFunction.apply(order.isAscending()));
-                } else {
-                    idQuery.orderBy(question.id.asc());
-                }
-            });
-        } else {
-            idQuery.orderBy(question.id.asc());
-        }
-
-        // 페이징 적용 (limit + 1로 hasNextPage 판단)
         return idQuery
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize() + 1)
