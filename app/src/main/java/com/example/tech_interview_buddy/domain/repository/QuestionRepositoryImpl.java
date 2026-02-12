@@ -76,8 +76,9 @@ public class QuestionRepositoryImpl implements QuestionRepositoryCustom {
 
         List<Question> questions = query.fetch();
         boolean hasNextPage = pagedQuestionIds.size() > pageable.getPageSize();
+        long totalElements = toTotalElements(pageable, questions.size(), hasNextPage);
 
-        return new PageImpl<>(questions, pageable, hasNextPage ? pageable.getOffset() + questions.size() + 1 : pageable.getOffset() + questions.size());
+        return new PageImpl<>(questions, pageable, totalElements);
     }
 
     /**
@@ -101,8 +102,14 @@ public class QuestionRepositoryImpl implements QuestionRepositoryCustom {
         if (hasNextPage) {
             questions = questions.subList(0, pageable.getPageSize());
         }
+        long totalElements = toTotalElements(pageable, questions.size(), hasNextPage);
 
-        return new PageImpl<>(questions, pageable, hasNextPage ? pageable.getOffset() + questions.size() + 1 : pageable.getOffset() + questions.size());
+        return new PageImpl<>(questions, pageable, totalElements);
+    }
+
+    /** COUNT 쿼리 생략 시 PageImpl에 넘길 totalElements 근사값 */
+    private long toTotalElements(Pageable pageable, int resultSize, boolean hasNextPage) {
+        return pageable.getOffset() + resultSize + (hasNextPage ? 1 : 0);
     }
 
     private void applySort(JPAQuery<?> query, Pageable pageable) {
