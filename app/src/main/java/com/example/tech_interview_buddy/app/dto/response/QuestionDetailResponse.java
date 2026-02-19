@@ -38,6 +38,7 @@ public class QuestionDetailResponse {
     public static class MyAnswerResponse {
         private Long id;
         private String content;
+        private String evaluation;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
     }

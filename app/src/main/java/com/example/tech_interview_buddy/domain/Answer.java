@@ -41,6 +41,9 @@ public class Answer {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
+    @Column(name = "evaluation", columnDefinition = "TEXT")
+    private String evaluation;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -58,5 +61,9 @@ public class Answer {
 
     public void updateContent(String content) {
         this.content = content;
+    }
+
+    public void updateEvaluation(String feedback) {
+        this.evaluation = feedback;
     }
 } 

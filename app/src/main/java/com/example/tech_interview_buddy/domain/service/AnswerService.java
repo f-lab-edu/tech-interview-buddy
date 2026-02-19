@@ -5,8 +5,7 @@ import com.example.tech_interview_buddy.domain.Question;
 import com.example.tech_interview_buddy.domain.User;
 import com.example.tech_interview_buddy.domain.repository.AnswerRepository;
 import com.example.tech_interview_buddy.domain.repository.QuestionRepository;
-import com.example.tech_interview_buddy.domain.repository.QuestionRepositoryImpl;
-import org.springframework.context.annotation.Lazy;
+import com.example.tech_interview_buddy.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,10 +21,15 @@ import java.util.Set;
 public class AnswerService {
     private final AnswerRepository answerRepository;
     private final QuestionRepository questionRepository;
+    private final UserRepository userRepository;
+    private final AnswerEvaluationService answerEvaluationService;
 
-    public AnswerService(AnswerRepository answerRepository, QuestionRepository questionRepository) {
+    public AnswerService(AnswerRepository answerRepository, QuestionRepository questionRepository,
+                         UserRepository userRepository, AnswerEvaluationService answerEvaluationService) {
         this.answerRepository = answerRepository;
         this.questionRepository = questionRepository;
+        this.userRepository = userRepository;
+        this.answerEvaluationService = answerEvaluationService;
     }
 
     @Transactional
@@ -33,16 +37,8 @@ public class AnswerService {
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new IllegalArgumentException("Question not found"));
         
-        // User 엔티티는 ID만 필요하므로 간단히 생성
-        User user = User.builder().build();
-        // Reflection으로 ID 설정 (또는 Repository에서 조회)
-        try {
-            java.lang.reflect.Field idField = User.class.getDeclaredField("id");
-            idField.setAccessible(true);
-            idField.set(user, userId);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to set user id", e);
-        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
         
         Answer answer = Answer.builder()
                 .question(question)
@@ -50,7 +46,11 @@ public class AnswerService {
                 .content(content)
                 .build();
 
-        return answerRepository.save(answer);
+        answer = answerRepository.save(answer);
+        answerRepository.flush();
+        answerEvaluationService.evaluateAnswerAsync(answer.getId(), question, content);
+
+        return answer;
     }
 
     @Transactional

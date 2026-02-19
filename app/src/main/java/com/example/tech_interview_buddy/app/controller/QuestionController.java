@@ -114,6 +114,7 @@ public class QuestionController {
             myAnswerResponse = QuestionDetailResponse.MyAnswerResponse.builder()
                 .id(result.getAnswer().getId())
                 .content(result.getAnswer().getContent())
+                .evaluation(result.getAnswer().getEvaluation())
                 .createdAt(result.getAnswer().getCreatedAt())
                 .updatedAt(result.getAnswer().getUpdatedAt())
                 .build();
