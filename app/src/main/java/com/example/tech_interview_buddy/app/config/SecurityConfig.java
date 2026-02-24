@@ -55,7 +55,9 @@ public class SecurityConfig {
                 
                 .requestMatchers("/api/v1/questions/**").authenticated()
                 .requestMatchers("/api/v1/answers/**").authenticated()
-                
+                .requestMatchers("/api/v1/resumes/**").authenticated()
+                .requestMatchers("/api/v1/notifications/**").authenticated()
+
                 .anyRequest().authenticated()
             )
             .userDetailsService(userDetailsService)
