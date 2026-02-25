@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Component
 public class ResumeFileValidator {
 
+    private static final int MAX_RESUME_COUNT = 5;
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
         "application/pdf",
@@ -31,6 +32,12 @@ public class ResumeFileValidator {
     private void validateFileSize(MultipartFile file) {
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new IllegalArgumentException("파일 크기는 10MB 이하만 허용됩니다.");
+        }
+    }
+
+    public void validateResumeCount(long currentCount) {
+        if (currentCount >= MAX_RESUME_COUNT) {
+            throw new IllegalStateException("이력서는 최대 " + MAX_RESUME_COUNT + "개까지 업로드할 수 있습니다.");
         }
     }
 }
