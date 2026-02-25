@@ -9,5 +9,6 @@ public enum Category {
     SYSTEM_DESIGN,
     NETWORK,
     SECURITY,
-    DEVOPS
+    DEVOPS,
+    BEHAVIORAL
 }
