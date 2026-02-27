@@ -28,7 +28,6 @@ public class ResumeStorageService {
     }
 
     public void uploadFile(MultipartFile file, String storageKey) {
-        ensureBucketConfigured();
         try {
             PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(properties.getBucketName())
@@ -48,7 +47,6 @@ public class ResumeStorageService {
     }
 
     public void deleteFile(String storageKey) {
-        ensureBucketConfigured();
         try {
             DeleteObjectRequest request = DeleteObjectRequest.builder()
                 .bucket(properties.getBucketName())
@@ -60,12 +58,6 @@ public class ResumeStorageService {
         } catch (S3Exception e) {
             log.error("Failed to delete resume from S3 - key: {}", storageKey, e);
             throw new IllegalStateException("Failed to delete resume from storage", e);
-        }
-    }
-
-    private void ensureBucketConfigured() {
-        if (!properties.isBucketConfigured()) {
-            throw new IllegalStateException("AWS S3 bucket is not configured");
         }
     }
 }

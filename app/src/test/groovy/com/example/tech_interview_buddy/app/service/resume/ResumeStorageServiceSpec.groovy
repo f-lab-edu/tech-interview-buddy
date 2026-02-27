@@ -55,7 +55,6 @@ class ResumeStorageServiceSpec extends Specification {
             getSize() >> 1024L
             getInputStream() >> new ByteArrayInputStream(new byte[1024])
         }
-        properties.isBucketConfigured() >> true
         properties.getBucketName() >> "test-bucket"
 
         when:
@@ -65,19 +64,6 @@ class ResumeStorageServiceSpec extends Specification {
         1 * s3Client.putObject(_ as PutObjectRequest, _ as RequestBody) >> PutObjectResponse.builder().build()
     }
 
-    def "uploadFile - 버킷이 설정되지 않으면 예외를 던진다"() {
-        given:
-        def file = Mock(MultipartFile)
-        properties.isBucketConfigured() >> false
-
-        when:
-        service.uploadFile(file, "resumes/1/10/resume.pdf")
-
-        then:
-        def e = thrown(IllegalStateException)
-        e.message == "AWS S3 bucket is not configured"
-    }
-
     def "uploadFile - S3 업로드 실패 시 IllegalStateException을 던진다"() {
         given:
         def file = Mock(MultipartFile) {
@@ -85,7 +71,6 @@ class ResumeStorageServiceSpec extends Specification {
             getSize() >> 1024L
             getInputStream() >> new ByteArrayInputStream(new byte[1024])
         }
-        properties.isBucketConfigured() >> true
         properties.getBucketName() >> "test-bucket"
         s3Client.putObject(_ as PutObjectRequest, _ as RequestBody) >> {
             throw S3Exception.builder().message("S3 error").build()
@@ -103,7 +88,6 @@ class ResumeStorageServiceSpec extends Specification {
 
     def "deleteFile - S3에서 파일을 정상적으로 삭제한다"() {
         given:
-        properties.isBucketConfigured() >> true
         properties.getBucketName() >> "test-bucket"
 
         when:
@@ -113,21 +97,8 @@ class ResumeStorageServiceSpec extends Specification {
         1 * s3Client.deleteObject(_ as DeleteObjectRequest) >> DeleteObjectResponse.builder().build()
     }
 
-    def "deleteFile - 버킷이 설정되지 않으면 예외를 던진다"() {
-        given:
-        properties.isBucketConfigured() >> false
-
-        when:
-        service.deleteFile("resumes/1/10/resume.pdf")
-
-        then:
-        def e = thrown(IllegalStateException)
-        e.message == "AWS S3 bucket is not configured"
-    }
-
     def "deleteFile - S3 삭제 실패 시 IllegalStateException을 던진다"() {
         given:
-        properties.isBucketConfigured() >> true
         properties.getBucketName() >> "test-bucket"
         s3Client.deleteObject(_ as DeleteObjectRequest) >> {
             throw S3Exception.builder().message("S3 error").build()
