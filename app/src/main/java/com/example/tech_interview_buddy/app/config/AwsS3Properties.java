@@ -15,11 +15,19 @@ public class AwsS3Properties {
     private String secretAccessKey;
 
     public boolean hasStaticCredentials() {
-        return accessKeyId != null && !accessKeyId.isBlank()
-            && secretAccessKey != null && !secretAccessKey.isBlank();
+        if (accessKeyId == null || secretAccessKey == null) {
+            return false;
+        }
+        if (accessKeyId.isBlank() || secretAccessKey.isBlank()) {
+            return false;
+        }
+        return true;
     }
 
     public boolean isBucketConfigured() {
-        return bucketName != null && !bucketName.isBlank();
+        if (bucketName == null) {
+            return false;
+        }
+        return !bucketName.isBlank();
     }
 }
