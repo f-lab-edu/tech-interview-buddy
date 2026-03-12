@@ -2,6 +2,7 @@ package com.example.tech_interview_buddy.app.service.resume;
 
 import com.example.tech_interview_buddy.app.config.S3RequestFactory;
 import java.io.IOException;
+import java.io.InputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -35,6 +37,19 @@ public class ResumeStorageService {
         } catch (IOException | S3Exception e) {
             log.error("Failed to upload resume to S3 - key: {}", storageKey, e);
             throw new IllegalStateException("Failed to upload resume to storage", e);
+        }
+    }
+
+    public InputStream downloadFile(String storageKey) {
+        try {
+            GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(properties.getBucketName())
+                .key(storageKey)
+                .build();
+            return s3Client.getObject(request);
+        } catch (S3Exception e) {
+            log.error("Failed to download resume from S3 - key: {}", storageKey, e);
+            throw new IllegalStateException("Failed to download resume from storage", e);
         }
     }
 

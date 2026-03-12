@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
@@ -17,6 +19,7 @@ public class ResumeUploadService {
     private final ResumeFileValidator fileValidator;
     private final ResumeStorageService storageService;
     private final ResumeRepository resumeRepository;
+    private final ResumeAnalysisOrchestrator analysisOrchestrator;
 
     @Transactional
     public Resume upload(User user, MultipartFile file) {
@@ -38,6 +41,14 @@ public class ResumeUploadService {
         resume.updateStorageKey(storageKey);
 
         log.info("Resume uploaded - id: {}, userId: {}, filename: {}", resume.getId(), user.getId(), file.getOriginalFilename());
+
+        Long resumeId = resume.getId();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                analysisOrchestrator.analyze(resumeId);
+            }
+        });
         return resume;
     }
 }
