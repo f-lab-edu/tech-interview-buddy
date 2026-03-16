@@ -1,6 +1,6 @@
 package com.example.tech_interview_buddy.app.service.resume;
 
-import com.example.tech_interview_buddy.app.config.AwsS3Properties;
+import com.example.tech_interview_buddy.app.config.S3RequestFactory;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ public class ResumeStorageService {
 
     private static final String RESUME_PREFIX = "resumes";
 
-    private final AwsS3Properties properties;
+    private final S3RequestFactory s3RequestFactory;
     private final S3Client s3Client;
 
     public String buildStorageKey(Long userId, Long resumeId, String originalFilename) {
@@ -29,13 +29,7 @@ public class ResumeStorageService {
 
     public void uploadFile(MultipartFile file, String storageKey) {
         try (var inputStream = file.getInputStream()) {
-            PutObjectRequest request = PutObjectRequest.builder()
-                .bucket(properties.getBucketName())
-                .key(storageKey)
-                .contentType(file.getContentType())
-                .contentLength(file.getSize())
-                .build();
-
+            PutObjectRequest request = s3RequestFactory.putRequest(storageKey, file.getContentType(), file.getSize());
             s3Client.putObject(request, RequestBody.fromInputStream(inputStream, file.getSize()));
             log.info("Uploaded resume to S3 - key: {}", storageKey);
         } catch (IOException | S3Exception e) {
@@ -46,11 +40,7 @@ public class ResumeStorageService {
 
     public void deleteFile(String storageKey) {
         try {
-            DeleteObjectRequest request = DeleteObjectRequest.builder()
-                .bucket(properties.getBucketName())
-                .key(storageKey)
-                .build();
-
+            DeleteObjectRequest request = s3RequestFactory.deleteRequest(storageKey);
             s3Client.deleteObject(request);
             log.info("Deleted resume from S3 - key: {}", storageKey);
         } catch (S3Exception e) {
