@@ -67,17 +67,4 @@ class AwsS3ConfigSpec extends Specification {
         client?.close()
     }
 
-    def "s3Client - 버킷이 설정되지 않으면 예외를 던진다"() {
-        given:
-        def properties = new AwsS3Properties()
-        properties.setAccessKeyId("test-access-key")
-        properties.setSecretAccessKey("test-secret-key")
-
-        when:
-        config.s3Client(properties)
-
-        then:
-        def e = thrown(IllegalStateException)
-        e.message == "aws.s3.bucket-name must be configured"
-    }
 }

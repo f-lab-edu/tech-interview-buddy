@@ -17,9 +17,6 @@ public class AwsS3Config {
 
     @Bean
     public S3Client s3Client(AwsS3Properties properties) {
-        if (!properties.isBucketConfigured()) {
-            throw new IllegalStateException("aws.s3.bucket-name must be configured");
-        }
         S3ClientBuilder builder = S3Client.builder();
         configureCommon(builder, properties);
         return builder.build();

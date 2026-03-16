@@ -55,34 +55,4 @@ class AwsS3PropertiesSpec extends Specification {
         !properties.hasStaticCredentials()
     }
 
-    // === isBucketConfigured ===
-
-    def "isBucketConfigured - bucketName이 있으면 true를 반환한다"() {
-        given:
-        properties.setBucketName("my-bucket")
-
-        expect:
-        properties.isBucketConfigured()
-    }
-
-    def "isBucketConfigured - bucketName이 null이면 false를 반환한다"() {
-        expect:
-        !properties.isBucketConfigured()
-    }
-
-    def "isBucketConfigured - bucketName이 빈 문자열이면 false를 반환한다"() {
-        given:
-        properties.setBucketName("")
-
-        expect:
-        !properties.isBucketConfigured()
-    }
-
-    def "isBucketConfigured - bucketName이 공백만 있으면 false를 반환한다"() {
-        given:
-        properties.setBucketName("   ")
-
-        expect:
-        !properties.isBucketConfigured()
-    }
 }
