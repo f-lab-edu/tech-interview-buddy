@@ -28,7 +28,7 @@ public class ResumeStorageService {
     }
 
     public void uploadFile(MultipartFile file, String storageKey) {
-        try {
+        try (var inputStream = file.getInputStream()) {
             PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(properties.getBucketName())
                 .key(storageKey)
@@ -36,9 +36,7 @@ public class ResumeStorageService {
                 .contentLength(file.getSize())
                 .build();
 
-            try (var inputStream = file.getInputStream()) {
-                s3Client.putObject(request, RequestBody.fromInputStream(inputStream, file.getSize()));
-            }
+            s3Client.putObject(request, RequestBody.fromInputStream(inputStream, file.getSize()));
             log.info("Uploaded resume to S3 - key: {}", storageKey);
         } catch (IOException | S3Exception e) {
             log.error("Failed to upload resume to S3 - key: {}", storageKey, e);
