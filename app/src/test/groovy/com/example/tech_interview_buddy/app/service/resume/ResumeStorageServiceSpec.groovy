@@ -1,6 +1,6 @@
 package com.example.tech_interview_buddy.app.service.resume
 
-import com.example.tech_interview_buddy.app.config.AwsS3Properties
+import com.example.tech_interview_buddy.app.config.S3RequestFactory
 import org.springframework.web.multipart.MultipartFile
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
@@ -15,10 +15,10 @@ import spock.lang.Subject
 class ResumeStorageServiceSpec extends Specification {
 
     S3Client s3Client = Mock()
-    AwsS3Properties properties = Mock()
+    S3RequestFactory s3RequestFactory = Mock()
 
     @Subject
-    ResumeStorageService service = new ResumeStorageService(properties, s3Client)
+    ResumeStorageService service = new ResumeStorageService(s3RequestFactory, s3Client)
 
     // === buildStorageKey ===
 
@@ -55,7 +55,8 @@ class ResumeStorageServiceSpec extends Specification {
             getSize() >> 1024L
             getInputStream() >> new ByteArrayInputStream(new byte[1024])
         }
-        properties.getBucketName() >> "test-bucket"
+        s3RequestFactory.putRequest("resumes/1/10/resume.pdf", "application/pdf", 1024L) >>
+            PutObjectRequest.builder().bucket("test-bucket").key("resumes/1/10/resume.pdf").build()
 
         when:
         service.uploadFile(file, "resumes/1/10/resume.pdf")
@@ -71,7 +72,8 @@ class ResumeStorageServiceSpec extends Specification {
             getSize() >> 1024L
             getInputStream() >> new ByteArrayInputStream(new byte[1024])
         }
-        properties.getBucketName() >> "test-bucket"
+        s3RequestFactory.putRequest("resumes/1/10/resume.pdf", "application/pdf", 1024L) >>
+            PutObjectRequest.builder().bucket("test-bucket").key("resumes/1/10/resume.pdf").build()
         s3Client.putObject(_ as PutObjectRequest, _ as RequestBody) >> {
             throw S3Exception.builder().message("S3 error").build()
         }
@@ -88,7 +90,8 @@ class ResumeStorageServiceSpec extends Specification {
 
     def "deleteFile - S3에서 파일을 정상적으로 삭제한다"() {
         given:
-        properties.getBucketName() >> "test-bucket"
+        s3RequestFactory.deleteRequest("resumes/1/10/resume.pdf") >>
+            DeleteObjectRequest.builder().bucket("test-bucket").key("resumes/1/10/resume.pdf").build()
 
         when:
         service.deleteFile("resumes/1/10/resume.pdf")
@@ -99,7 +102,8 @@ class ResumeStorageServiceSpec extends Specification {
 
     def "deleteFile - S3 삭제 실패 시 IllegalStateException을 던진다"() {
         given:
-        properties.getBucketName() >> "test-bucket"
+        s3RequestFactory.deleteRequest("resumes/1/10/resume.pdf") >>
+            DeleteObjectRequest.builder().bucket("test-bucket").key("resumes/1/10/resume.pdf").build()
         s3Client.deleteObject(_ as DeleteObjectRequest) >> {
             throw S3Exception.builder().message("S3 error").build()
         }
