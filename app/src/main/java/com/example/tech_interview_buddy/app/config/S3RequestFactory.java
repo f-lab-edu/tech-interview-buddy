@@ -3,6 +3,7 @@ package com.example.tech_interview_buddy.app.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Component
@@ -17,6 +18,13 @@ public class S3RequestFactory {
             .key(key)
             .contentType(contentType)
             .contentLength(contentLength)
+            .build();
+    }
+
+    public GetObjectRequest getRequest(String key) {
+        return GetObjectRequest.builder()
+            .bucket(properties.getBucketName())
+            .key(key)
             .build();
     }
 
