@@ -42,10 +42,7 @@ public class ResumeStorageService {
 
     public InputStream downloadFile(String storageKey) {
         try {
-            GetObjectRequest request = GetObjectRequest.builder()
-                .bucket(properties.getBucketName())
-                .key(storageKey)
-                .build();
+            GetObjectRequest request = s3RequestFactory.getRequest(storageKey);
             return s3Client.getObject(request);
         } catch (S3Exception e) {
             log.error("Failed to download resume from S3 - key: {}", storageKey, e);
