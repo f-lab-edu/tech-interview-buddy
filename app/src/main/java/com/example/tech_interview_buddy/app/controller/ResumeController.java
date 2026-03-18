@@ -5,7 +5,6 @@ import com.example.tech_interview_buddy.app.dto.response.resume.ResumeUploadResp
 import com.example.tech_interview_buddy.app.service.resume.ResumeQueryService;
 import com.example.tech_interview_buddy.app.service.resume.ResumeUploadService;
 import com.example.tech_interview_buddy.domain.User;
-import com.example.tech_interview_buddy.domain.resume.Resume;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -30,9 +29,9 @@ public class ResumeController {
     public ResponseEntity<ResumeUploadResponse> upload(
             @AuthenticationPrincipal User user,
             @RequestParam("file") MultipartFile file) {
-        Resume resume = resumeUploadService.upload(user, file);
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ResumeUploadResponse.from(resume));
+            .body(resumeUploadService.upload(user, file));
+    }
 
     @GetMapping
     public ResponseEntity<Page<ResumeListItemResponse>> list(

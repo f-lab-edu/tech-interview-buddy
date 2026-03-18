@@ -1,5 +1,6 @@
 package com.example.tech_interview_buddy.app.service.resume;
 
+import com.example.tech_interview_buddy.app.dto.response.resume.ResumeUploadResponse;
 import com.example.tech_interview_buddy.domain.User;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository;
 import com.example.tech_interview_buddy.domain.resume.Resume;
@@ -22,7 +23,7 @@ public class ResumeUploadService {
     private final ResumeAnalysisOrchestrator analysisOrchestrator;
 
     @Transactional
-    public Resume upload(User user, MultipartFile file) {
+    public ResumeUploadResponse upload(User user, MultipartFile file) {
         fileValidator.validate(file);
         fileValidator.validateResumeCount(resumeRepository.countByUserId(user.getId()));
 
@@ -49,6 +50,6 @@ public class ResumeUploadService {
                 analysisOrchestrator.analyze(resumeId);
             }
         });
-        return resume;
+        return ResumeUploadResponse.from(resume);
     }
 }
