@@ -10,6 +10,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Configuration
 @EnableConfigurationProperties(AwsS3Properties.class)
@@ -19,6 +20,17 @@ public class AwsS3Config {
     public S3Client s3Client(AwsS3Properties properties) {
         S3ClientBuilder builder = S3Client.builder();
         configureCommon(builder, properties);
+        return builder.build();
+    }
+
+    @Bean
+    public S3Presigner s3Presigner(AwsS3Properties properties) {
+        AwsCredentialsProvider credentialsProvider = resolveCredentialsProvider(properties);
+        S3Presigner.Builder builder = S3Presigner.builder()
+            .credentialsProvider(credentialsProvider);
+        if (properties.getRegion() != null && !properties.getRegion().isBlank()) {
+            builder.region(Region.of(properties.getRegion()));
+        }
         return builder.build();
     }
 

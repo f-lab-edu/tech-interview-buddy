@@ -17,6 +17,7 @@ public class AwsS3Properties {
     private String region;
     private String accessKeyId;
     private String secretAccessKey;
+    private int presignedUrlExpirationMinutes = 60;
 
     public boolean hasStaticCredentials() {
         if (accessKeyId == null || secretAccessKey == null) {

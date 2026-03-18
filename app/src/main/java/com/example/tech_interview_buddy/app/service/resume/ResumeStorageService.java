@@ -1,8 +1,10 @@
 package com.example.tech_interview_buddy.app.service.resume;
 
+import com.example.tech_interview_buddy.app.config.AwsS3Properties;
 import com.example.tech_interview_buddy.app.config.S3RequestFactory;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,8 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 @Slf4j
 @Service
@@ -23,6 +27,8 @@ public class ResumeStorageService {
 
     private final S3RequestFactory s3RequestFactory;
     private final S3Client s3Client;
+    private final S3Presigner s3Presigner;
+    private final AwsS3Properties awsS3Properties;
 
     public String buildStorageKey(Long userId, Long resumeId, String originalFilename) {
         String safeFilename = originalFilename != null ? originalFilename.replaceAll("\\s+", "_") : "resume.pdf";
@@ -48,6 +54,14 @@ public class ResumeStorageService {
             log.error("Failed to download resume from S3 - key: {}", storageKey, e);
             throw new IllegalStateException("Failed to download resume from storage", e);
         }
+    }
+
+    public String generatePresignedUrl(String storageKey) {
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+            .signatureDuration(Duration.ofMinutes(awsS3Properties.getPresignedUrlExpirationMinutes()))
+            .getObjectRequest(s3RequestFactory.getRequest(storageKey))
+            .build();
+        return s3Presigner.presignGetObject(presignRequest).url().toString();
     }
 
     public void deleteFile(String storageKey) {
