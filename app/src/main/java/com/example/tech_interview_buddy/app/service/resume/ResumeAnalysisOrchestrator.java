@@ -2,6 +2,7 @@ package com.example.tech_interview_buddy.app.service.resume;
 
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository;
 import com.example.tech_interview_buddy.domain.resume.Resume;
+import com.example.tech_interview_buddy.app.service.notification.NotificationCreationService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiQuestionService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiReviewService;
 import java.io.InputStream;
@@ -23,6 +24,7 @@ public class ResumeAnalysisOrchestrator {
     private final TextExtractionService textExtractionService;
     private final ResumeAiReviewService aiReviewService;
     private final ResumeAiQuestionService aiQuestionService;
+    private final NotificationCreationService notificationCreationService;
 
     private final ConcurrentHashMap<Long, Semaphore> userSemaphores = new ConcurrentHashMap<>();
 
@@ -73,16 +75,19 @@ public class ResumeAnalysisOrchestrator {
             resume.markCompleted(LocalDateTime.now());
             resumeRepository.save(resume);
 
+            notificationCreationService.notifySuccess(resume);
             log.info("Analysis completed for resumeId={}", resume.getId());
 
         } catch (TextExtractionException e) {
             log.warn("Text extraction failed for resumeId={}: {}", resume.getId(), e.getMessage());
             resume.markFailed(e.getMessage(), LocalDateTime.now());
             resumeRepository.save(resume);
+            notificationCreationService.notifyFailure(resume);
         } catch (Exception e) {
             log.error("Analysis failed for resumeId={}", resume.getId(), e);
             resume.markFailed("분석 중 오류가 발생했습니다.", LocalDateTime.now());
             resumeRepository.save(resume);
+            notificationCreationService.notifyFailure(resume);
         }
     }
 }
