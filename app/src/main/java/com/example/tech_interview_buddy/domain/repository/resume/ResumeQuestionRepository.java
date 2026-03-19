@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ResumeQuestionRepository extends JpaRepository<ResumeQuestion, Long>, ResumeQuestionRepositoryCustom {
 
     List<ResumeQuestion> findByResumeId(Long resumeId);
+
+    void deleteByResumeId(Long resumeId);
 }

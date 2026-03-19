@@ -3,6 +3,7 @@ package com.example.tech_interview_buddy.app.controller;
 import com.example.tech_interview_buddy.app.dto.response.resume.ResumeDetailResponse;
 import com.example.tech_interview_buddy.app.dto.response.resume.ResumeListItemResponse;
 import com.example.tech_interview_buddy.app.dto.response.resume.ResumeUploadResponse;
+import com.example.tech_interview_buddy.app.service.resume.ResumeDeleteService;
 import com.example.tech_interview_buddy.app.service.resume.ResumeDetailService;
 import com.example.tech_interview_buddy.app.service.resume.ResumeQueryService;
 import com.example.tech_interview_buddy.app.service.resume.ResumeUploadService;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +30,7 @@ public class ResumeController {
     private final ResumeUploadService resumeUploadService;
     private final ResumeQueryService resumeQueryService;
     private final ResumeDetailService resumeDetailService;
+    private final ResumeDeleteService resumeDeleteService;
 
     @PostMapping
     public ResponseEntity<ResumeUploadResponse> upload(
@@ -50,5 +53,13 @@ public class ResumeController {
             @AuthenticationPrincipal User user,
             @PathVariable Long resumeId) {
         return ResponseEntity.ok(resumeDetailService.getDetail(resumeId, user.getId()));
+    }
+
+    @DeleteMapping("/{resumeId}")
+    public ResponseEntity<Void> delete(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long resumeId) {
+        resumeDeleteService.delete(resumeId, user.getId());
+        return ResponseEntity.noContent().build();
     }
 }
