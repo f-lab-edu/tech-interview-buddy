@@ -1,5 +1,6 @@
 package com.example.tech_interview_buddy.app.service.resume;
 
+import com.example.tech_interview_buddy.domain.repository.NotificationRepository;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeQuestionRepository;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository;
 import com.example.tech_interview_buddy.domain.resume.Resume;
@@ -18,6 +19,7 @@ public class ResumeDeleteService {
 
     private final ResumeRepository resumeRepository;
     private final ResumeQuestionRepository questionRepository;
+    private final NotificationRepository notificationRepository;
     private final ResumeStorageService storageService;
 
     @Transactional
@@ -31,6 +33,7 @@ public class ResumeDeleteService {
         }
 
         questionRepository.deleteByResumeId(resumeId);
+        notificationRepository.deleteByResumeId(resumeId);
         storageService.deleteFile(resume.getStorageKey());
         resumeRepository.delete(resume);
 
