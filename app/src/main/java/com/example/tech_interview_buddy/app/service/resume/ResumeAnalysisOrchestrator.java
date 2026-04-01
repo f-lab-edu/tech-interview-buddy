@@ -5,6 +5,7 @@ import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.app.service.notification.NotificationCreationService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiQuestionService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiReviewService;
+import com.example.tech_interview_buddy.domain.service.resume.ResumeMarkdownService;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,6 +25,7 @@ public class ResumeAnalysisOrchestrator {
     private final TextExtractionService textExtractionService;
     private final ResumeAiReviewService aiReviewService;
     private final ResumeAiQuestionService aiQuestionService;
+    private final ResumeMarkdownService markdownService;
     private final NotificationCreationService notificationCreationService;
 
     private final ConcurrentHashMap<Long, Semaphore> userSemaphores = new ConcurrentHashMap<>();
@@ -67,6 +69,13 @@ public class ResumeAnalysisOrchestrator {
 
             resume.markProcessing(LocalDateTime.now());
             resumeRepository.save(resume);
+
+            try {
+                markdownService.convertAndSave(resume);
+            } catch (Exception e) {
+                log.warn("Markdown conversion failed for resumeId={}, continuing pipeline: {}",
+                        resume.getId(), e.getMessage());
+            }
 
             aiReviewService.generateAndSave(resume);
 
