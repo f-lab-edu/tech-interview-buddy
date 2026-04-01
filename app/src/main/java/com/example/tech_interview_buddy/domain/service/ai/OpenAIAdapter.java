@@ -27,7 +27,7 @@ public class OpenAIAdapter implements AiAdapter {
     private final RestTemplate restTemplate;
 
     private static final String MODEL = "gpt-4o-mini";
-    private static final double TEMPERATURE = 0.3;
+    private static final double TEMPERATURE = 0.1;
     private static final int MAX_TOKENS = 1000;
 
     @Override
@@ -65,8 +65,7 @@ public class OpenAIAdapter implements AiAdapter {
                 url,
                 HttpMethod.POST,
                 request,
-                ChatCompletionResponse.class
-        );
+                ChatCompletionResponse.class);
 
         log.debug("OpenAI API response status: {}", response.getStatusCode());
         log.debug("OpenAI API response body: {}", response.getBody());
@@ -86,11 +85,9 @@ public class OpenAIAdapter implements AiAdapter {
         return Map.of(
                 "model", MODEL,
                 "messages", List.of(
-                        Map.of("role", "user", "content", prompt)
-                ),
+                        Map.of("role", "user", "content", prompt)),
                 "temperature", TEMPERATURE,
-                "max_tokens", MAX_TOKENS
-        );
+                "max_tokens", MAX_TOKENS);
     }
 
     private String extractContent(ResponseEntity<ChatCompletionResponse> response) {
@@ -99,7 +96,7 @@ public class OpenAIAdapter implements AiAdapter {
             log.warn("Empty response from OpenAI API");
             return null;
         }
-        
+
         List<ChatCompletionResponse.Choice> choices = body.getChoices();
         if (choices == null || choices.isEmpty()) {
             log.warn("No choices in response from OpenAI API");
