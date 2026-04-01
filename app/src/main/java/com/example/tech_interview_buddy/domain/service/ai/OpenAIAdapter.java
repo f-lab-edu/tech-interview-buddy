@@ -32,13 +32,18 @@ public class OpenAIAdapter implements AiAdapter {
 
     @Override
     public String sendPrompt(String prompt) {
+        return sendPrompt(prompt, MAX_TOKENS);
+    }
+
+    @Override
+    public String sendPrompt(String prompt, int maxTokens) {
         if (!openAiConfig.isConfigured()) {
             log.warn("OpenAI API key is not configured. Skipping API call.");
             return null;
         }
 
         try {
-            ResponseEntity<ChatCompletionResponse> response = callOpenAiApi(prompt);
+            ResponseEntity<ChatCompletionResponse> response = callOpenAiApi(prompt, maxTokens);
             return extractContent(response);
         } catch (HttpClientErrorException e) {
             handleHttpClientError(e);
@@ -52,10 +57,10 @@ public class OpenAIAdapter implements AiAdapter {
         }
     }
 
-    private ResponseEntity<ChatCompletionResponse> callOpenAiApi(String prompt) {
+    private ResponseEntity<ChatCompletionResponse> callOpenAiApi(String prompt, int maxTokens) {
         String url = openAiConfig.getApiUrl();
         HttpHeaders headers = createHeaders();
-        Map<String, Object> requestBody = createRequestBody(prompt);
+        Map<String, Object> requestBody = createRequestBody(prompt, maxTokens);
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
         log.debug("Calling OpenAI API: {}", url);
@@ -81,13 +86,13 @@ public class OpenAIAdapter implements AiAdapter {
         return headers;
     }
 
-    private Map<String, Object> createRequestBody(String prompt) {
+    private Map<String, Object> createRequestBody(String prompt, int maxTokens) {
         return Map.of(
                 "model", MODEL,
                 "messages", List.of(
                         Map.of("role", "user", "content", prompt)),
                 "temperature", TEMPERATURE,
-                "max_tokens", MAX_TOKENS);
+                "max_tokens", maxTokens);
     }
 
     private String extractContent(ResponseEntity<ChatCompletionResponse> response) {
