@@ -70,12 +70,7 @@ public class ResumeAnalysisOrchestrator {
             resume.markProcessing(LocalDateTime.now());
             resumeRepository.save(resume);
 
-            try {
-                markdownService.convertAndSave(resume);
-            } catch (Exception e) {
-                log.warn("Markdown conversion failed for resumeId={}, continuing pipeline: {}",
-                        resume.getId(), e.getMessage());
-            }
+            markdownService.convertAndSave(resume);
 
             aiReviewService.generateAndSave(resume);
 
