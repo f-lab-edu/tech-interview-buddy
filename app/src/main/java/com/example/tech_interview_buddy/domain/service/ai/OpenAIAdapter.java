@@ -27,18 +27,23 @@ public class OpenAIAdapter implements AiAdapter {
     private final RestTemplate restTemplate;
 
     private static final String MODEL = "gpt-4o-mini";
-    private static final double TEMPERATURE = 0.3;
+    private static final double TEMPERATURE = 0.1;
     private static final int MAX_TOKENS = 1000;
 
     @Override
     public String sendPrompt(String prompt) {
+        return sendPrompt(prompt, MAX_TOKENS);
+    }
+
+    @Override
+    public String sendPrompt(String prompt, int maxTokens) {
         if (!openAiConfig.isConfigured()) {
             log.warn("OpenAI API key is not configured. Skipping API call.");
             return null;
         }
 
         try {
-            ResponseEntity<ChatCompletionResponse> response = callOpenAiApi(prompt);
+            ResponseEntity<ChatCompletionResponse> response = callOpenAiApi(prompt, maxTokens);
             return extractContent(response);
         } catch (HttpClientErrorException e) {
             handleHttpClientError(e);
@@ -52,10 +57,10 @@ public class OpenAIAdapter implements AiAdapter {
         }
     }
 
-    private ResponseEntity<ChatCompletionResponse> callOpenAiApi(String prompt) {
+    private ResponseEntity<ChatCompletionResponse> callOpenAiApi(String prompt, int maxTokens) {
         String url = openAiConfig.getApiUrl();
         HttpHeaders headers = createHeaders();
-        Map<String, Object> requestBody = createRequestBody(prompt);
+        Map<String, Object> requestBody = createRequestBody(prompt, maxTokens);
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
         log.debug("Calling OpenAI API: {}", url);
@@ -65,8 +70,7 @@ public class OpenAIAdapter implements AiAdapter {
                 url,
                 HttpMethod.POST,
                 request,
-                ChatCompletionResponse.class
-        );
+                ChatCompletionResponse.class);
 
         log.debug("OpenAI API response status: {}", response.getStatusCode());
         log.debug("OpenAI API response body: {}", response.getBody());
@@ -82,15 +86,13 @@ public class OpenAIAdapter implements AiAdapter {
         return headers;
     }
 
-    private Map<String, Object> createRequestBody(String prompt) {
+    private Map<String, Object> createRequestBody(String prompt, int maxTokens) {
         return Map.of(
                 "model", MODEL,
                 "messages", List.of(
-                        Map.of("role", "user", "content", prompt)
-                ),
+                        Map.of("role", "user", "content", prompt)),
                 "temperature", TEMPERATURE,
-                "max_tokens", MAX_TOKENS
-        );
+                "max_tokens", maxTokens);
     }
 
     private String extractContent(ResponseEntity<ChatCompletionResponse> response) {
@@ -99,7 +101,7 @@ public class OpenAIAdapter implements AiAdapter {
             log.warn("Empty response from OpenAI API");
             return null;
         }
-        
+
         List<ChatCompletionResponse.Choice> choices = body.getChoices();
         if (choices == null || choices.isEmpty()) {
             log.warn("No choices in response from OpenAI API");

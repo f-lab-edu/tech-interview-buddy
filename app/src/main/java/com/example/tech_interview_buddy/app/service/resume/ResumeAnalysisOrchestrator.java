@@ -2,8 +2,10 @@ package com.example.tech_interview_buddy.app.service.resume;
 
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository;
 import com.example.tech_interview_buddy.domain.resume.Resume;
+import com.example.tech_interview_buddy.app.service.notification.NotificationCreationService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiQuestionService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiReviewService;
+import com.example.tech_interview_buddy.domain.service.resume.ResumeMarkdownService;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,6 +25,8 @@ public class ResumeAnalysisOrchestrator {
     private final TextExtractionService textExtractionService;
     private final ResumeAiReviewService aiReviewService;
     private final ResumeAiQuestionService aiQuestionService;
+    private final ResumeMarkdownService markdownService;
+    private final NotificationCreationService notificationCreationService;
 
     private final ConcurrentHashMap<Long, Semaphore> userSemaphores = new ConcurrentHashMap<>();
 
@@ -66,6 +70,8 @@ public class ResumeAnalysisOrchestrator {
             resume.markProcessing(LocalDateTime.now());
             resumeRepository.save(resume);
 
+            markdownService.convertAndSave(resume);
+
             aiReviewService.generateAndSave(resume);
 
             aiQuestionService.generateAndSave(resume);
@@ -73,16 +79,19 @@ public class ResumeAnalysisOrchestrator {
             resume.markCompleted(LocalDateTime.now());
             resumeRepository.save(resume);
 
+            notificationCreationService.notifySuccess(resume);
             log.info("Analysis completed for resumeId={}", resume.getId());
 
         } catch (TextExtractionException e) {
             log.warn("Text extraction failed for resumeId={}: {}", resume.getId(), e.getMessage());
             resume.markFailed(e.getMessage(), LocalDateTime.now());
             resumeRepository.save(resume);
+            notificationCreationService.notifyFailure(resume);
         } catch (Exception e) {
             log.error("Analysis failed for resumeId={}", resume.getId(), e);
             resume.markFailed("분석 중 오류가 발생했습니다.", LocalDateTime.now());
             resumeRepository.save(resume);
+            notificationCreationService.notifyFailure(resume);
         }
     }
 }

@@ -20,6 +20,8 @@ public class ResumeDetailResponse {
     private LocalDateTime analysisCompletedAt;
 
     private String presignedUrl;
+    private String extractedText;
+    private String markdownText;
 
     private String statusMessage;
 

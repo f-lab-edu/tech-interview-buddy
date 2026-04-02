@@ -58,6 +58,8 @@ public class ResumeDetailService {
             .uploadedAt(resume.getCreatedAt())
             .analysisCompletedAt(resume.getAnalysisCompletedAt())
             .presignedUrl(presignedUrl)
+            .extractedText(resume.getExtractedText())
+            .markdownText(resume.getSummarizedText())
             .statusMessage(statusMessage)
             .review(review)
             .questions(questions)
