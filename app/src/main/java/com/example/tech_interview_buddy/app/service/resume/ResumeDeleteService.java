@@ -3,6 +3,7 @@ package com.example.tech_interview_buddy.app.service.resume;
 import com.example.tech_interview_buddy.domain.repository.NotificationRepository;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeQuestionRepository;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository;
+import com.example.tech_interview_buddy.domain.repository.resume.ResumeScoreRepository;
 import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.domain.resume.ResumeStatus;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ public class ResumeDeleteService {
 
     private final ResumeRepository resumeRepository;
     private final ResumeQuestionRepository questionRepository;
+    private final ResumeScoreRepository scoreRepository;
     private final NotificationRepository notificationRepository;
     private final ResumeStorageService storageService;
 
@@ -33,6 +35,7 @@ public class ResumeDeleteService {
         }
 
         questionRepository.deleteByResumeId(resumeId);
+        scoreRepository.deleteByResumeId(resumeId);
         notificationRepository.deleteByResumeId(resumeId);
         storageService.deleteFile(resume.getStorageKey());
         resumeRepository.delete(resume);
