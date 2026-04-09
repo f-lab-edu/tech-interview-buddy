@@ -51,22 +51,7 @@ public class ResumeDetailService {
 
         ResumeScoreResponse scoring = null;
         if (resume.getStatus() == ResumeStatus.DONE) {
-            List<ResumeScore> scoreEntities = scoreRepository.findByResumeId(resumeId);
-            if (!scoreEntities.isEmpty()) {
-                int totalScore = 0;
-                int maxTotalScore = 0;
-                List<ResumeScoreResponse.ScoreDetail> scoreDetails = new ArrayList<>();
-                for (ResumeScore entity : scoreEntities) {
-                    totalScore += entity.getScore();
-                    maxTotalScore += entity.getMaxScore();
-                    scoreDetails.add(ResumeScoreResponse.ScoreDetail.from(entity));
-                }
-                scoring = ResumeScoreResponse.builder()
-                        .totalScore(totalScore)
-                        .maxTotalScore(maxTotalScore)
-                        .scores(scoreDetails)
-                        .build();
-            }
+            scoring = buildScoringResponse(resumeId);
         }
 
         List<ResumeDetailResponse.QuestionItem> questions = questionRepository.findByResumeId(resumeId)
@@ -98,6 +83,28 @@ public class ResumeDetailService {
             case FAILED -> "분석에 실패했습니다. 이력서를 다시 업로드해 주세요.";
             default -> null;
         };
+    }
+
+    private ResumeScoreResponse buildScoringResponse(Long resumeId) {
+        List<ResumeScore> scoreEntities = scoreRepository.findByResumeId(resumeId);
+        if (scoreEntities.isEmpty()) {
+            return null;
+        }
+
+        int totalScore = 0;
+        int maxTotalScore = 0;
+        List<ResumeScoreResponse.ScoreDetail> scoreDetails = new ArrayList<>();
+        for (ResumeScore entity : scoreEntities) {
+            totalScore += entity.getScore();
+            maxTotalScore += entity.getMaxScore();
+            scoreDetails.add(ResumeScoreResponse.ScoreDetail.from(entity));
+        }
+
+        return ResumeScoreResponse.builder()
+                .totalScore(totalScore)
+                .maxTotalScore(maxTotalScore)
+                .scores(scoreDetails)
+                .build();
     }
 
     private ResumeReviewResponse parseReview(String reviewData, Long resumeId) {
