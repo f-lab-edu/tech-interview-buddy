@@ -2,7 +2,10 @@ package com.example.tech_interview_buddy.app.service.resume;
 
 import com.example.tech_interview_buddy.app.dto.response.resume.ResumeDetailResponse;
 import com.example.tech_interview_buddy.app.dto.response.resume.ResumeReviewResponse;
+import com.example.tech_interview_buddy.app.dto.response.resume.ResumeScoreResponse;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeQuestionRepository;
+import com.example.tech_interview_buddy.domain.repository.resume.ResumeScoreRepository;
+import com.example.tech_interview_buddy.domain.resume.ResumeScore;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository;
 import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.domain.resume.ResumeStatus;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,6 +28,7 @@ public class ResumeDetailService {
 
     private final ResumeRepository resumeRepository;
     private final ResumeQuestionRepository questionRepository;
+    private final ResumeScoreRepository scoreRepository;
     private final ResumeStorageService storageService;
     private final ObjectMapper objectMapper;
 
@@ -44,6 +49,11 @@ public class ResumeDetailService {
             review = parseReview(resume.getReviewData(), resumeId);
         }
 
+        ResumeScoreResponse scoring = null;
+        if (resume.getStatus() == ResumeStatus.DONE) {
+            scoring = buildScoringResponse(resumeId);
+        }
+
         List<ResumeDetailResponse.QuestionItem> questions = questionRepository.findByResumeId(resumeId)
             .stream()
             .map(ResumeDetailResponse.QuestionItem::from)
@@ -62,6 +72,7 @@ public class ResumeDetailService {
             .markdownText(resume.getSummarizedText())
             .statusMessage(statusMessage)
             .review(review)
+            .scoring(scoring)
             .questions(questions)
             .build();
     }
@@ -72,6 +83,28 @@ public class ResumeDetailService {
             case FAILED -> "분석에 실패했습니다. 이력서를 다시 업로드해 주세요.";
             default -> null;
         };
+    }
+
+    private ResumeScoreResponse buildScoringResponse(Long resumeId) {
+        List<ResumeScore> scoreEntities = scoreRepository.findByResumeId(resumeId);
+        if (scoreEntities.isEmpty()) {
+            return null;
+        }
+
+        int totalScore = 0;
+        int maxTotalScore = 0;
+        List<ResumeScoreResponse.ScoreDetail> scoreDetails = new ArrayList<>();
+        for (ResumeScore entity : scoreEntities) {
+            totalScore += entity.getScore();
+            maxTotalScore += entity.getMaxScore();
+            scoreDetails.add(ResumeScoreResponse.ScoreDetail.from(entity));
+        }
+
+        return ResumeScoreResponse.builder()
+                .totalScore(totalScore)
+                .maxTotalScore(maxTotalScore)
+                .scores(scoreDetails)
+                .build();
     }
 
     private ResumeReviewResponse parseReview(String reviewData, Long resumeId) {
