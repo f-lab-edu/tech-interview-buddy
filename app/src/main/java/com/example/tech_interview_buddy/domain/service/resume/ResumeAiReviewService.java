@@ -2,13 +2,11 @@ package com.example.tech_interview_buddy.domain.service.resume;
 
 import com.example.tech_interview_buddy.app.dto.response.resume.ResumeReviewResponse;
 import com.example.tech_interview_buddy.domain.resume.Resume;
-import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository;
 import com.example.tech_interview_buddy.domain.service.ai.AiAdapter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -18,25 +16,22 @@ public class ResumeAiReviewService {
     private final AiAdapter aiAdapter;
     private final ResumeReviewPromptTemplate promptTemplate;
     private final ObjectMapper objectMapper;
-    private final ResumeRepository resumeRepository;
 
     /**
-     * AI 리뷰를 생성하고 Resume 엔티티에 저장한다.
+     * AI 리뷰를 생성하고 Resume 엔티티에 반영한다.
      * 파싱 실패 시 1회 재시도한다.
      *
      * @throws ResumeAiReviewException AI 호출 또는 파싱이 모두 실패한 경우
      */
-    @Transactional
-    public void generateAndSave(Resume resume) {
+    public void generate(Resume resume) {
         String text = resume.getExtractedText();
 
         ResumeReviewResponse review = callWithRetry(text);
 
         String reviewJson = serialize(review);
         resume.saveReviewResult(reviewJson, review.getSummary());
-        resumeRepository.save(resume);
 
-        log.info("AI review saved for resumeId={}", resume.getId());
+        log.info("AI review generated for resumeId={}", resume.getId());
     }
 
     private ResumeReviewResponse callWithRetry(String resumeText) {

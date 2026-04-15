@@ -72,9 +72,11 @@ public class ResumeAnalysisOrchestrator {
             resume.markProcessing(LocalDateTime.now());
             resumeRepository.save(resume);
 
-            markdownService.convertAndSave(resume);
+            markdownService.convert(resume);
+            resumeRepository.save(resume);
 
-            aiReviewService.generateAndSave(resume);
+            aiReviewService.generate(resume);
+            resumeRepository.save(resume);
 
             aiScoringService.generateAndSave(resume);
 
