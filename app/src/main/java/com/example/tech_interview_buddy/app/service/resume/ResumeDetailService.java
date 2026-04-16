@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -90,21 +89,7 @@ public class ResumeDetailService {
         if (scoreEntities.isEmpty()) {
             return null;
         }
-
-        int totalScore = 0;
-        int maxTotalScore = 0;
-        List<ResumeScoreResponse.ScoreDetail> scoreDetails = new ArrayList<>();
-        for (ResumeScore entity : scoreEntities) {
-            totalScore += entity.getScore();
-            maxTotalScore += entity.getMaxScore();
-            scoreDetails.add(ResumeScoreResponse.ScoreDetail.from(entity));
-        }
-
-        return ResumeScoreResponse.builder()
-                .totalScore(totalScore)
-                .maxTotalScore(maxTotalScore)
-                .scores(scoreDetails)
-                .build();
+        return ResumeScoreResponse.from(scoreEntities);
     }
 
     private ResumeReviewResponse parseReview(String reviewData, Long resumeId) {

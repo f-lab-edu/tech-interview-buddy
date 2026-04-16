@@ -1,12 +1,10 @@
 package com.example.tech_interview_buddy.domain.service.resume;
 
-import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository;
 import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.domain.service.ai.AiAdapter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -14,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ResumeMarkdownService {
 
     private final AiAdapter aiAdapter;
-    private final ResumeRepository resumeRepository;
 
     private static final String PROMPT_TEMPLATE = """
             다음은 PDF에서 추출한 이력서 텍스트입니다. 이 텍스트를 마크다운 형식으로 변환해 주세요.
@@ -33,8 +30,7 @@ public class ResumeMarkdownService {
             %s
             """;
 
-    @Transactional
-    public void convertAndSave(Resume resume) {
+    public void convert(Resume resume) {
         String extractedText = resume.getExtractedText();
         if (extractedText == null || extractedText.isBlank()) {
             log.warn("No extracted text for resumeId={}, skipping markdown conversion", resume.getId());
@@ -49,9 +45,7 @@ public class ResumeMarkdownService {
             return;
         }
 
-        resume.saveExtractedText(extractedText, markdown);
-        resumeRepository.save(resume);
-
-        log.info("Markdown conversion saved for resumeId={}", resume.getId());
+        resume.saveMarkdown(markdown);
+        log.info("Markdown conversion done for resumeId={}", resume.getId());
     }
 }
