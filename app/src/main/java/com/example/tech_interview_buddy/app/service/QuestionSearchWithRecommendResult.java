@@ -1,6 +1,7 @@
-package com.example.tech_interview_buddy.domain.service;
+package com.example.tech_interview_buddy.app.service;
 
 import com.example.tech_interview_buddy.app.dto.external.RecommendedQuestion;
+import com.example.tech_interview_buddy.domain.service.QuestionSearchResult;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.data.domain.Page;
