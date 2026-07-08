@@ -1,6 +1,7 @@
 package com.example.tech_interview_buddy.domain.service;
 
 import com.example.tech_interview_buddy.common.domain.Category;
+import com.example.tech_interview_buddy.domain.exception.ResourceNotFoundException;
 import com.example.tech_interview_buddy.domain.Answer;
 import com.example.tech_interview_buddy.domain.Question;
 import com.example.tech_interview_buddy.domain.QuestionTag;
@@ -37,7 +38,7 @@ public class QuestionService {
 
     public Question findById(Long id) {
         return questionRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Question not found with id: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found with id: " + id));
     }
 
     public Page<QuestionSearchResult> searchQuestions(QuestionSearchSpec spec, Long currentUserId) {
@@ -102,7 +103,7 @@ public class QuestionService {
     @Transactional
     public void deleteQuestion(Long questionId) {
         if (!questionRepository.existsById(questionId)) {
-            throw new IllegalArgumentException("Question not found with id: " + questionId);
+            throw new ResourceNotFoundException("Question not found with id: " + questionId);
         }
         questionRepository.deleteById(questionId);
     }
