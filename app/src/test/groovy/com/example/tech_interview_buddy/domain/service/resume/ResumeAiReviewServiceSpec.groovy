@@ -1,8 +1,8 @@
 package com.example.tech_interview_buddy.domain.service.resume
 
-import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository
 import com.example.tech_interview_buddy.domain.resume.Resume
 import com.example.tech_interview_buddy.domain.service.ai.AiAdapter
+import com.example.tech_interview_buddy.domain.service.ai.AiJsonClient
 import com.fasterxml.jackson.databind.ObjectMapper
 import spock.lang.Specification
 import spock.lang.Subject
@@ -11,12 +11,12 @@ class ResumeAiReviewServiceSpec extends Specification {
 
     AiAdapter aiAdapter = Mock()
     ResumeReviewPromptTemplate promptTemplate = Mock()
-    ResumeRepository resumeRepository = Mock()
     ObjectMapper objectMapper = new ObjectMapper()
+    AiJsonClient aiJsonClient = new AiJsonClient(aiAdapter, objectMapper)
 
     @Subject
     ResumeAiReviewService service = new ResumeAiReviewService(
-            aiAdapter, promptTemplate, objectMapper, resumeRepository
+            aiJsonClient, promptTemplate, objectMapper
     )
 
     static final String VALID_JSON = """
@@ -58,14 +58,13 @@ class ResumeAiReviewServiceSpec extends Specification {
         aiAdapter.sendPrompt(_) >> VALID_JSON
 
         when:
-        service.generateAndSave(resume)
+        service.generate(resume)
 
         then:
         1 * resume.saveReviewResult(
                 { it.contains("전반적으로") },
                 "전반적으로 잘 작성된 이력서입니다."
         )
-        1 * resumeRepository.save(resume)
     }
 
     def "extractedText를 프롬프트에 사용한다"() {
@@ -75,7 +74,7 @@ class ResumeAiReviewServiceSpec extends Specification {
         aiAdapter.sendPrompt(_) >> VALID_JSON
 
         when:
-        service.generateAndSave(resume)
+        service.generate(resume)
 
         then:
         1 * promptTemplate.buildPrompt("이력서 본문 텍스트")
@@ -89,12 +88,11 @@ class ResumeAiReviewServiceSpec extends Specification {
         promptTemplate.buildPrompt(_) >> "prompt"
 
         when:
-        service.generateAndSave(resume)
+        service.generate(resume)
 
         then:
         2 * aiAdapter.sendPrompt(_) >>> ["invalid json", VALID_JSON]
         1 * resume.saveReviewResult(_, _)
-        1 * resumeRepository.save(resume)
     }
 
     def "AI 응답이 null일 때 1회 재시도 후 성공하면 저장한다"() {
@@ -103,7 +101,7 @@ class ResumeAiReviewServiceSpec extends Specification {
         promptTemplate.buildPrompt(_) >> "prompt"
 
         when:
-        service.generateAndSave(resume)
+        service.generate(resume)
 
         then:
         2 * aiAdapter.sendPrompt(_) >>> [null, VALID_JSON]
@@ -119,13 +117,12 @@ class ResumeAiReviewServiceSpec extends Specification {
         aiAdapter.sendPrompt(_) >> "invalid json"
 
         when:
-        service.generateAndSave(resume)
+        service.generate(resume)
 
         then:
         thrown(ResumeAiReviewException)
         2 * aiAdapter.sendPrompt(_)
         0 * resume.saveReviewResult(_, _)
-        0 * resumeRepository.save(_)
     }
 
     def "두 번 모두 null 응답이면 ResumeAiReviewException을 던진다"() {
@@ -135,7 +132,7 @@ class ResumeAiReviewServiceSpec extends Specification {
         aiAdapter.sendPrompt(_) >> null
 
         when:
-        service.generateAndSave(resume)
+        service.generate(resume)
 
         then:
         thrown(ResumeAiReviewException)
@@ -154,7 +151,7 @@ class ResumeAiReviewServiceSpec extends Specification {
         resume.saveReviewResult(_, _) >> { args -> capturedReviewJson = args[0] }
 
         when:
-        service.generateAndSave(resume)
+        service.generate(resume)
 
         then:
         capturedReviewJson != null
@@ -173,7 +170,7 @@ class ResumeAiReviewServiceSpec extends Specification {
         aiAdapter.sendPrompt(_) >> "```json\n${VALID_JSON}\n```"
 
         when:
-        service.generateAndSave(resume)
+        service.generate(resume)
 
         then:
         1 * resume.saveReviewResult(_, "전반적으로 잘 작성된 이력서입니다.")

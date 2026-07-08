@@ -4,9 +4,8 @@ import com.example.tech_interview_buddy.domain.repository.resume.ResumeScoreRepo
 import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.domain.resume.ResumeScore;
 import com.example.tech_interview_buddy.domain.resume.ScoringCriteria;
-import com.example.tech_interview_buddy.domain.service.ai.AiAdapter;
+import com.example.tech_interview_buddy.domain.service.ai.AiJsonClient;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Builder;
@@ -22,17 +21,20 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ResumeAiScoringService {
 
-    private final AiAdapter aiAdapter;
+    private final AiJsonClient aiJsonClient;
     private final ResumeScoringPromptTemplate promptTemplate;
-    private final ObjectMapper objectMapper;
     private final ResumeScoreRepository scoreRepository;
 
     @Transactional
     public void generateAndSave(Resume resume) {
-        String text = resume.getExtractedText();
+        String prompt = promptTemplate.buildPrompt(resume.getExtractedText());
 
-        List<ScoreItem> scores = callWithRetry(text);
-        if (scores == null || scores.isEmpty()) {
+        List<ScoreItem> scores = aiJsonClient.requestList(
+                prompt,
+                new TypeReference<List<ScoreItem>>() {},
+                () -> new ResumeAiScoringException("AI 점수 평가 응답을 파싱하는 데 실패했습니다."));
+
+        if (scores.isEmpty()) {
             log.warn("AI returned no scores for resumeId={}", resume.getId());
             return;
         }
@@ -49,49 +51,6 @@ public class ResumeAiScoringService {
 
         scoreRepository.saveAll(entities);
         log.info("Saved {} scores for resumeId={}", entities.size(), resume.getId());
-    }
-
-    private List<ScoreItem> callWithRetry(String resumeText) {
-        String prompt = promptTemplate.buildPrompt(resumeText);
-
-        String rawResponse = aiAdapter.sendPrompt(prompt);
-        List<ScoreItem> scores = tryParse(rawResponse);
-
-        if (scores != null) {
-            return scores;
-        }
-
-        log.warn("AI scoring parse failed on first attempt, retrying...");
-        rawResponse = aiAdapter.sendPrompt(prompt);
-        scores = tryParse(rawResponse);
-
-        if (scores != null) {
-            return scores;
-        }
-
-        throw new ResumeAiScoringException("AI 점수 평가 응답을 파싱하는 데 실패했습니다.");
-    }
-
-    private List<ScoreItem> tryParse(String rawResponse) {
-        if (rawResponse == null || rawResponse.isBlank()) {
-            return null;
-        }
-        try {
-            String json = extractJsonArray(rawResponse);
-            return objectMapper.readValue(json, new TypeReference<>() {});
-        } catch (Exception e) {
-            log.warn("Failed to parse AI scoring response: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    private String extractJsonArray(String raw) {
-        int start = raw.indexOf('[');
-        int end = raw.lastIndexOf(']');
-        if (start == -1 || end == -1 || start >= end) {
-            return raw;
-        }
-        return raw.substring(start, end + 1);
     }
 
     private ScoringCriteria parseCriteria(String value) {

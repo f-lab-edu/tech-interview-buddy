@@ -5,9 +5,8 @@ import com.example.tech_interview_buddy.common.domain.Difficulty;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeQuestionRepository;
 import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.domain.resume.ResumeQuestion;
-import com.example.tech_interview_buddy.domain.service.ai.AiAdapter;
+import com.example.tech_interview_buddy.domain.service.ai.AiJsonClient;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Builder;
@@ -23,9 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ResumeAiQuestionService {
 
-    private final AiAdapter aiAdapter;
+    private final AiJsonClient aiJsonClient;
     private final ResumeQuestionPromptTemplate promptTemplate;
-    private final ObjectMapper objectMapper;
     private final ResumeQuestionRepository questionRepository;
 
     /**
@@ -34,10 +32,14 @@ public class ResumeAiQuestionService {
      */
     @Transactional
     public void generateAndSave(Resume resume) {
-        String text = resume.getExtractedText();
+        String prompt = promptTemplate.buildPrompt(resume.getExtractedText());
 
-        List<QuestionItem> questions = callWithRetry(text);
-        if (questions == null || questions.isEmpty()) {
+        List<QuestionItem> questions = aiJsonClient.requestList(
+                prompt,
+                new TypeReference<List<QuestionItem>>() {},
+                () -> new ResumeAiQuestionException("AI 예상질문 응답을 파싱하는 데 실패했습니다."));
+
+        if (questions.isEmpty()) {
             log.warn("AI returned no questions for resumeId={}", resume.getId());
             return;
         }
@@ -55,49 +57,6 @@ public class ResumeAiQuestionService {
 
         questionRepository.saveAll(entities);
         log.info("Saved {} questions for resumeId={}", entities.size(), resume.getId());
-    }
-
-    private List<QuestionItem> callWithRetry(String resumeText) {
-        String prompt = promptTemplate.buildPrompt(resumeText);
-
-        String rawResponse = aiAdapter.sendPrompt(prompt);
-        List<QuestionItem> questions = tryParse(rawResponse);
-
-        if (questions != null) {
-            return questions;
-        }
-
-        log.warn("AI question parse failed on first attempt, retrying...");
-        rawResponse = aiAdapter.sendPrompt(prompt);
-        questions = tryParse(rawResponse);
-
-        if (questions != null) {
-            return questions;
-        }
-
-        throw new ResumeAiReviewException("AI 예상질문 응답을 파싱하는 데 실패했습니다.");
-    }
-
-    private List<QuestionItem> tryParse(String rawResponse) {
-        if (rawResponse == null || rawResponse.isBlank()) {
-            return null;
-        }
-        try {
-            String json = extractJsonArray(rawResponse);
-            return objectMapper.readValue(json, new TypeReference<>() {});
-        } catch (Exception e) {
-            log.warn("Failed to parse AI question response: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    private String extractJsonArray(String raw) {
-        int start = raw.indexOf('[');
-        int end = raw.lastIndexOf(']');
-        if (start == -1 || end == -1 || start >= end) {
-            return raw;
-        }
-        return raw.substring(start, end + 1);
     }
 
     private Category parseCategory(String value) {

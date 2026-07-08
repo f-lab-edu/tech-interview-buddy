@@ -5,6 +5,7 @@ import com.example.tech_interview_buddy.domain.resume.Resume
 import com.example.tech_interview_buddy.domain.resume.ResumeScore
 import com.example.tech_interview_buddy.domain.resume.ScoringCriteria
 import com.example.tech_interview_buddy.domain.service.ai.AiAdapter
+import com.example.tech_interview_buddy.domain.service.ai.AiJsonClient
 import com.fasterxml.jackson.databind.ObjectMapper
 import spock.lang.Specification
 import spock.lang.Subject
@@ -15,10 +16,11 @@ class ResumeAiScoringServiceSpec extends Specification {
     ResumeScoringPromptTemplate promptTemplate = Mock()
     ResumeScoreRepository scoreRepository = Mock()
     ObjectMapper objectMapper = new ObjectMapper()
+    AiJsonClient aiJsonClient = new AiJsonClient(aiAdapter, objectMapper)
 
     @Subject
     ResumeAiScoringService service = new ResumeAiScoringService(
-            aiAdapter, promptTemplate, objectMapper, scoreRepository
+            aiJsonClient, promptTemplate, scoreRepository
     )
 
     static final String VALID_JSON = """
