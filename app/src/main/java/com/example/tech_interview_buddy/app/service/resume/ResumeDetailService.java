@@ -6,16 +6,13 @@ import com.example.tech_interview_buddy.app.dto.response.resume.ResumeScoreRespo
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeQuestionRepository;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeScoreRepository;
 import com.example.tech_interview_buddy.domain.resume.ResumeScore;
-import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository;
 import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.domain.resume.ResumeStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,7 +22,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ResumeDetailService {
 
-    private final ResumeRepository resumeRepository;
+    private final ResumeAccessValidator resumeAccessValidator;
     private final ResumeQuestionRepository questionRepository;
     private final ResumeScoreRepository scoreRepository;
     private final ResumeStorageService storageService;
@@ -33,9 +30,7 @@ public class ResumeDetailService {
 
     @Transactional(readOnly = true)
     public ResumeDetailResponse getDetail(Long resumeId, Long userId) {
-        Resume resume = resumeRepository.findByIdAndUserId(resumeId, userId)
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.FORBIDDEN, "이력서에 접근할 수 없습니다."));
+        Resume resume = resumeAccessValidator.getOwnedResume(resumeId, userId);
 
         String presignedUrl = null;
         if (resume.getMimeType() != null && resume.getMimeType().contains("pdf")) {
