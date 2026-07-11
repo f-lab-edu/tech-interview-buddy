@@ -1,7 +1,5 @@
 package com.example.tech_interview_buddy.app.service.resume;
 
-import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository;
-import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.app.service.notification.NotificationCreationService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiQuestionService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiReviewService;
@@ -19,66 +17,84 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ResumeAnalysisOrchestrator {
 
-    private final ResumeRepository resumeRepository;
+    private final ResumeAnalysisTxOps tx;
     private final ResumeStorageService storageService;
     private final TextExtractionService textExtractionService;
+    private final ResumeMarkdownService markdownService;
     private final ResumeAiReviewService aiReviewService;
     private final ResumeAiScoringService aiScoringService;
     private final ResumeAiQuestionService aiQuestionService;
-    private final ResumeMarkdownService markdownService;
     private final NotificationCreationService notificationCreationService;
     private final Executor taskExecutor;
 
     /**
      * 이력서 분석 파이프라인을 비동기로 실행한다.
-     * 분석은 대부분 LLM API 호출(I/O)이므로 전역 스레드풀 크기가 동시 실행 상한을 결정한다.
-     * 사용자당 이력서는 최대 개수가 제한되어 있어, 한 사용자가 슬롯을 독점할 위험은 사실상 없다.
+     * 분석은 대부분 LLM 호출(I/O)이라 실제 동시 실행 상한은 전역 스레드풀 크기가 결정한다.
      */
     public void analyze(Long resumeId) {
-        Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new IllegalStateException("Resume not found: " + resumeId));
-        taskExecutor.execute(() -> runPipeline(resume));
+        taskExecutor.execute(() -> runPipeline(resumeId));
     }
 
-    private void runPipeline(Resume resume) {
-        log.info("Analysis started for resumeId={}", resume.getId());
+    /**
+     * 각 DB 쓰기는 {@link ResumeAnalysisTxOps}를 통해 "id 재조회 → 없으면 중단"으로 수행된다.
+     * 그래서 대기 중이거나 실행 중에 이력서가 삭제되면 유령 행을 만들지 않고 조용히 멈춘다.
+     * LLM·S3 등 느린 계산은 트랜잭션 밖에서 수행해 DB 커넥션을 오래 점유하지 않는다.
+     * (scoring·questions 서비스는 자체 {@code @Transactional}이라 재조회한 managed 엔티티를 넘겨 호출한다.)
+     */
+    private void runPipeline(Long resumeId) {
+        log.info("Analysis started for resumeId={}", resumeId);
 
         try {
+            ResumeSource source = tx.read(resumeId,
+                    r -> new ResumeSource(r.getStorageKey(), r.getMimeType()));
+
             String extractedText;
-            try (InputStream inputStream = storageService.downloadFile(resume.getStorageKey())) {
-                extractedText = textExtractionService.extract(inputStream, resume.getMimeType());
+            try (InputStream inputStream = storageService.downloadFile(source.storageKey())) {
+                extractedText = textExtractionService.extract(inputStream, source.mimeType());
             }
-            resume.saveExtractedText(extractedText, null);
+            tx.update(resumeId, r -> {
+                r.saveExtractedText(extractedText, null);
+                r.markProcessing(LocalDateTime.now());
+            });
 
-            resume.markProcessing(LocalDateTime.now());
-            resumeRepository.save(resume);
+            String markdown = markdownService.convert(extractedText);
+            if (markdown != null) {
+                tx.update(resumeId, r -> r.saveMarkdown(markdown));
+            }
 
-            markdownService.convert(resume);
-            resumeRepository.save(resume);
+            ResumeAiReviewService.Result review = aiReviewService.generate(extractedText);
+            tx.update(resumeId, r -> r.saveReviewResult(review.reviewJson(), review.summary()));
 
-            aiReviewService.generate(resume);
-            resumeRepository.save(resume);
+            tx.update(resumeId, aiScoringService::generateAndSave);
 
-            aiScoringService.generateAndSave(resume);
+            tx.update(resumeId, aiQuestionService::generateAndSave);
 
-            aiQuestionService.generateAndSave(resume);
+            tx.update(resumeId, r -> {
+                r.markCompleted(LocalDateTime.now());
+                notificationCreationService.notifySuccess(r);
+            });
+            log.info("Analysis completed for resumeId={}", resumeId);
 
-            resume.markCompleted(LocalDateTime.now());
-            resumeRepository.save(resume);
-
-            notificationCreationService.notifySuccess(resume);
-            log.info("Analysis completed for resumeId={}", resume.getId());
-
+        } catch (ResumeDeletedException e) {
+            log.info("Resume deleted during analysis, aborting - resumeId={}", resumeId);
         } catch (TextExtractionException e) {
-            log.warn("Text extraction failed for resumeId={}: {}", resume.getId(), e.getMessage());
-            resume.markFailed(e.getMessage(), LocalDateTime.now());
-            resumeRepository.save(resume);
-            notificationCreationService.notifyFailure(resume);
+            log.warn("Text extraction failed for resumeId={}: {}", resumeId, e.getMessage());
+            failQuietly(resumeId, e.getMessage());
         } catch (Exception e) {
-            log.error("Analysis failed for resumeId={}", resume.getId(), e);
-            resume.markFailed("분석 중 오류가 발생했습니다.", LocalDateTime.now());
-            resumeRepository.save(resume);
-            notificationCreationService.notifyFailure(resume);
+            log.error("Analysis failed for resumeId={}", resumeId, e);
+            failQuietly(resumeId, "분석 중 오류가 발생했습니다.");
         }
     }
+
+    private void failQuietly(Long resumeId, String reason) {
+        boolean marked = tx.updateIfPresent(resumeId, r -> {
+            r.markFailed(reason, LocalDateTime.now());
+            notificationCreationService.notifyFailure(r);
+        });
+        if (!marked) {
+            log.info("Resume already deleted, skip failure handling - resumeId={}", resumeId);
+        }
+    }
+
+    private record ResumeSource(String storageKey, String mimeType) {}
 }

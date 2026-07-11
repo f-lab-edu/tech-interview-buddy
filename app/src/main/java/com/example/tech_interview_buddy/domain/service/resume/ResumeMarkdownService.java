@@ -1,6 +1,5 @@
 package com.example.tech_interview_buddy.domain.service.resume;
 
-import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.domain.service.ai.AiAdapter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,22 +29,26 @@ public class ResumeMarkdownService {
             %s
             """;
 
-    public void convert(Resume resume) {
-        String extractedText = resume.getExtractedText();
+    /**
+     * 추출 텍스트를 마크다운으로 변환해 반환한다. 저장은 호출자가 담당한다.
+     *
+     * @return 변환된 마크다운. 입력이 비었거나 변환 결과가 비면 {@code null}(저장 생략).
+     */
+    public String convert(String extractedText) {
         if (extractedText == null || extractedText.isBlank()) {
-            log.warn("No extracted text for resumeId={}, skipping markdown conversion", resume.getId());
-            return;
+            log.warn("No extracted text, skipping markdown conversion");
+            return null;
         }
 
         String prompt = PROMPT_TEMPLATE.formatted(extractedText);
         String markdown = aiAdapter.sendPrompt(prompt, 4000);
 
         if (markdown == null || markdown.isBlank()) {
-            log.warn("Markdown conversion returned empty for resumeId={}", resume.getId());
-            return;
+            log.warn("Markdown conversion returned empty");
+            return null;
         }
 
-        resume.saveMarkdown(markdown);
-        log.info("Markdown conversion done for resumeId={}", resume.getId());
+        log.info("Markdown conversion done");
+        return markdown;
     }
 }
