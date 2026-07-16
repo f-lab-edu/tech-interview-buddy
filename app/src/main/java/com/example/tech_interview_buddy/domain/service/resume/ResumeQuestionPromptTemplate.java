@@ -60,13 +60,7 @@ public class ResumeQuestionPromptTemplate {
         """;
 
     public String buildPrompt(String resumeText) {
-        return String.format("""
-            %s
-
-            ### 이력서 내용
-            %s
-
-            위 이력서를 분석하여 위에서 정의한 JSON 배열 형식으로만 응답하세요.
-            """, SYSTEM_INSTRUCTION, resumeText);
+        return SYSTEM_INSTRUCTION + "\n\n### 이력서 내용\n" + resumeText
+                + "\n\n위 이력서를 분석하여 위에서 정의한 JSON 배열 형식으로만 응답하세요.\n";
     }
 }

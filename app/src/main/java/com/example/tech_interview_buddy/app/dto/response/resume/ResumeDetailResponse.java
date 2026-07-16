@@ -27,6 +27,8 @@ public class ResumeDetailResponse {
 
     private ResumeReviewResponse review;
 
+    private ResumeScoreResponse scoring;
+
     private List<QuestionItem> questions;
 
     @Getter

@@ -5,6 +5,7 @@ import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.app.service.notification.NotificationCreationService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiQuestionService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiReviewService;
+import com.example.tech_interview_buddy.domain.service.resume.ResumeAiScoringService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeMarkdownService;
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ public class ResumeAnalysisOrchestrator {
     private final ResumeStorageService storageService;
     private final TextExtractionService textExtractionService;
     private final ResumeAiReviewService aiReviewService;
+    private final ResumeAiScoringService aiScoringService;
     private final ResumeAiQuestionService aiQuestionService;
     private final ResumeMarkdownService markdownService;
     private final NotificationCreationService notificationCreationService;
@@ -73,6 +75,8 @@ public class ResumeAnalysisOrchestrator {
             markdownService.convertAndSave(resume);
 
             aiReviewService.generateAndSave(resume);
+
+            aiScoringService.generateAndSave(resume);
 
             aiQuestionService.generateAndSave(resume);
 
