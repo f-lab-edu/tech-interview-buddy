@@ -93,6 +93,7 @@ public class AnswerEvaluationPromptTemplate {
             case NETWORK -> "네트워크";
             case SECURITY -> "보안";
             case DEVOPS -> "DevOps";
+            case BEHAVIORAL -> "행동 면접";
         };
     }
 }
