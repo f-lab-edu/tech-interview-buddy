@@ -30,12 +30,7 @@ public class ResumeAnalysisTransactionRunner {
     }
 
     @Transactional
-    public boolean updateIfPresent(Long resumeId, Consumer<Resume> mutation) {
-        return resumeRepository.findById(resumeId)
-                .map(resume -> {
-                    mutation.accept(resume);
-                    return true;
-                })
-                .orElse(false);
+    public void updateIfPresent(Long resumeId, Consumer<Resume> mutation) {
+        resumeRepository.findById(resumeId).ifPresent(mutation);
     }
 }

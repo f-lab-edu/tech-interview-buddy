@@ -77,13 +77,10 @@ public class ResumeAnalysisOrchestrator {
     }
 
     private void failQuietly(Long resumeId, String reason) {
-        boolean marked = transactionRunner.updateIfPresent(resumeId, resume -> {
+        transactionRunner.updateIfPresent(resumeId, resume -> {
             resume.markFailed(reason, LocalDateTime.now());
             notificationCreationService.notifyFailure(resume);
         });
-        if (!marked) {
-            log.info("Resume already deleted, skip failure handling - resumeId={}", resumeId);
-        }
     }
 
     private record ResumeSource(String storageKey, String mimeType) {}
