@@ -1,5 +1,6 @@
 package com.example.tech_interview_buddy.domain.service.resume
 
+import com.example.tech_interview_buddy.domain.exception.ResumeAiReviewException
 import com.example.tech_interview_buddy.domain.service.ai.AiAdapter
 import com.example.tech_interview_buddy.domain.service.ai.AiJsonClient
 import com.fasterxml.jackson.databind.ObjectMapper
