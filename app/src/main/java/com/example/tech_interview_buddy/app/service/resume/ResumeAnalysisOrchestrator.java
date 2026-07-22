@@ -1,6 +1,8 @@
 package com.example.tech_interview_buddy.app.service.resume;
 
 import com.example.tech_interview_buddy.app.service.notification.NotificationCreationService;
+import com.example.tech_interview_buddy.domain.exception.ResumeDeletedException;
+import com.example.tech_interview_buddy.domain.exception.TextExtractionException;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiQuestionService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiReviewService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiScoringService;

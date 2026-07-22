@@ -1,4 +1,4 @@
-package com.example.tech_interview_buddy.app.service.resume;
+package com.example.tech_interview_buddy.domain.exception;
 
 /**
  * 분석 파이프라인 진행 중 대상 이력서가 삭제되었음을 알리는 내부 제어 신호.

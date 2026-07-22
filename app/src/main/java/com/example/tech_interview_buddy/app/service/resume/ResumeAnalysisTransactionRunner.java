@@ -1,5 +1,6 @@
 package com.example.tech_interview_buddy.app.service.resume;
 
+import com.example.tech_interview_buddy.domain.exception.ResumeDeletedException;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository;
 import com.example.tech_interview_buddy.domain.resume.Resume;
 import java.util.function.Consumer;

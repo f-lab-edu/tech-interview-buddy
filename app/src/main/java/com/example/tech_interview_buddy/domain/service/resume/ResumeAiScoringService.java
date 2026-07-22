@@ -1,5 +1,6 @@
 package com.example.tech_interview_buddy.domain.service.resume;
 
+import com.example.tech_interview_buddy.domain.exception.ResumeAiScoringException;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeScoreRepository;
 import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.domain.resume.ResumeScore;

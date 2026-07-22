@@ -2,6 +2,7 @@ package com.example.tech_interview_buddy.domain.service.resume;
 
 import com.example.tech_interview_buddy.common.domain.Category;
 import com.example.tech_interview_buddy.common.domain.Difficulty;
+import com.example.tech_interview_buddy.domain.exception.ResumeAiQuestionException;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeQuestionRepository;
 import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.domain.resume.ResumeQuestion;

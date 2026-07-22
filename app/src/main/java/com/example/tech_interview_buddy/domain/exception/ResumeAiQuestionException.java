@@ -1,4 +1,4 @@
-package com.example.tech_interview_buddy.domain.service.resume;
+package com.example.tech_interview_buddy.domain.exception;
 
 public class ResumeAiQuestionException extends RuntimeException {
 
