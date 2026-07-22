@@ -12,9 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * 질문 검색(도메인)과 추천 서비스(외부) 결과를 조합한다.
@@ -37,10 +35,7 @@ public class QuestionSearchFacade {
 
         RecommendResponse recommendResponse = getRecommendResponse(category, tags);
 
-        List<RecommendedQuestion> recommendedQuestions =
-                Optional.ofNullable(recommendResponse)
-                        .map(RecommendResponse::getRecommendedQuestions)
-                        .orElse(Collections.emptyList());
+        List<RecommendedQuestion> recommendedQuestions = recommendResponse.getRecommendedQuestions();
 
         return QuestionSearchWithRecommendResult.builder()
                 .searchResults(searchResults)
