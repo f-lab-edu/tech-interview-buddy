@@ -5,7 +5,7 @@ import com.example.tech_interview_buddy.app.dto.response.resume.ResumeReviewResp
 import com.example.tech_interview_buddy.app.dto.response.resume.ResumeScoreResponse;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeQuestionRepository;
 import com.example.tech_interview_buddy.domain.repository.resume.ResumeScoreRepository;
-import com.example.tech_interview_buddy.domain.resume.ResumeScore;
+import com.example.tech_interview_buddy.domain.resume.ResumeScores;
 import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.domain.resume.ResumeStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -80,11 +80,11 @@ public class ResumeDetailService {
     }
 
     private ResumeScoreResponse buildScoringResponse(Long resumeId) {
-        List<ResumeScore> scoreEntities = scoreRepository.findByResumeId(resumeId);
-        if (scoreEntities.isEmpty()) {
+        ResumeScores resumeScores = new ResumeScores(scoreRepository.findByResumeId(resumeId));
+        if (resumeScores.isEmpty()) {
             return null;
         }
-        return ResumeScoreResponse.from(scoreEntities);
+        return ResumeScoreResponse.from(resumeScores);
     }
 
     private ResumeReviewResponse parseReview(String reviewData, Long resumeId) {

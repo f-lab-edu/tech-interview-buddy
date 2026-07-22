@@ -1,6 +1,8 @@
 package com.example.tech_interview_buddy.app.dto.response.resume;
 
 import com.example.tech_interview_buddy.domain.resume.ResumeScore;
+import com.example.tech_interview_buddy.domain.resume.ResumeScores;
+
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,21 +15,14 @@ public class ResumeScoreResponse {
     private int maxTotalScore;
     private List<ScoreDetail> scores;
 
-    public static ResumeScoreResponse from(List<ResumeScore> scoreEntities) {
-        int totalScore = 0;
-        int maxTotalScore = 0;
-        List<ScoreDetail> scoreDetails = scoreEntities.stream()
+    public static ResumeScoreResponse from(ResumeScores resumeScores) {
+        List<ScoreDetail> scoreDetails = resumeScores.getScores().stream()
                 .map(ScoreDetail::from)
                 .toList();
 
-        for (ResumeScore entity : scoreEntities) {
-            totalScore += entity.getScore();
-            maxTotalScore += entity.getMaxScore();
-        }
-
         return ResumeScoreResponse.builder()
-                .totalScore(totalScore)
-                .maxTotalScore(maxTotalScore)
+                .totalScore(resumeScores.getTotalScore())
+                .maxTotalScore(resumeScores.getTotalMaxScore())
                 .scores(scoreDetails)
                 .build();
     }
