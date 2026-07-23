@@ -1,19 +1,17 @@
 package com.example.tech_interview_buddy.app.service.resume;
 
-import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository;
-import com.example.tech_interview_buddy.domain.resume.Resume;
 import com.example.tech_interview_buddy.app.service.notification.NotificationCreationService;
+import com.example.tech_interview_buddy.domain.exception.ResumeDeletedException;
+import com.example.tech_interview_buddy.domain.exception.TextExtractionException;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiQuestionService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiReviewService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeAiScoringService;
 import com.example.tech_interview_buddy.domain.service.resume.ResumeMarkdownService;
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.Executor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -21,81 +19,71 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ResumeAnalysisOrchestrator {
 
-    private final ResumeRepository resumeRepository;
+    private final ResumeAnalysisTransactionRunner transactionRunner;
     private final ResumeStorageService storageService;
     private final TextExtractionService textExtractionService;
+    private final ResumeMarkdownService markdownService;
     private final ResumeAiReviewService aiReviewService;
     private final ResumeAiScoringService aiScoringService;
     private final ResumeAiQuestionService aiQuestionService;
-    private final ResumeMarkdownService markdownService;
     private final NotificationCreationService notificationCreationService;
+    private final Executor taskExecutor;
 
-    private final ConcurrentHashMap<Long, Semaphore> userSemaphores = new ConcurrentHashMap<>();
-
-    /**
-     * 이력서 분석 파이프라인을 비동기로 실행한다.
-     * 같은 사용자의 분석은 동시에 하나만 실행된다 (순서 보장).
-     */
-    @Async("taskExecutor")
     public void analyze(Long resumeId) {
-        Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new IllegalStateException("Resume not found: " + resumeId));
-
-        Semaphore semaphore = userSemaphores.computeIfAbsent(
-                resume.getUser().getId(), id -> new Semaphore(1, true));
-
-        try {
-            semaphore.acquire();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("Analysis interrupted for resumeId={}", resumeId);
-            return;
-        }
-
-        try {
-            runPipeline(resume);
-        } finally {
-            semaphore.release();
-        }
+        taskExecutor.execute(() -> runPipeline(resumeId));
     }
 
-    private void runPipeline(Resume resume) {
-        log.info("Analysis started for resumeId={}", resume.getId());
+    private void runPipeline(Long resumeId) {
+        log.info("Analysis started for resumeId={}", resumeId);
 
         try {
+            ResumeSource source = transactionRunner.read(resumeId,
+                    resume -> new ResumeSource(resume.getStorageKey(), resume.getMimeType()));
+
             String extractedText;
-            try (InputStream inputStream = storageService.downloadFile(resume.getStorageKey())) {
-                extractedText = textExtractionService.extract(inputStream, resume.getMimeType());
+            try (InputStream inputStream = storageService.downloadFile(source.storageKey())) {
+                extractedText = textExtractionService.extract(inputStream, source.mimeType());
             }
-            resume.saveExtractedText(extractedText, null);
+            transactionRunner.update(resumeId, resume -> {
+                resume.saveExtractedText(extractedText, null);
+                resume.markProcessing(LocalDateTime.now());
+            });
 
-            resume.markProcessing(LocalDateTime.now());
-            resumeRepository.save(resume);
+            String markdown = markdownService.convert(extractedText);
+            if (markdown != null) {
+                transactionRunner.update(resumeId, resume -> resume.saveMarkdown(markdown));
+            }
 
-            markdownService.convertAndSave(resume);
+            ResumeAiReviewService.Result review = aiReviewService.generate(extractedText);
+            transactionRunner.update(resumeId, resume -> resume.saveReviewResult(review.reviewJson(), review.summary()));
 
-            aiReviewService.generateAndSave(resume);
+            transactionRunner.update(resumeId, aiScoringService::generateAndSave);
 
-            aiScoringService.generateAndSave(resume);
+            transactionRunner.update(resumeId, aiQuestionService::generateAndSave);
 
-            aiQuestionService.generateAndSave(resume);
+            transactionRunner.update(resumeId, resume -> {
+                resume.markCompleted(LocalDateTime.now());
+                notificationCreationService.notifySuccess(resume);
+            });
+            log.info("Analysis completed for resumeId={}", resumeId);
 
-            resume.markCompleted(LocalDateTime.now());
-            resumeRepository.save(resume);
-
-            notificationCreationService.notifySuccess(resume);
-            log.info("Analysis completed for resumeId={}", resume.getId());
-
+        } catch (ResumeDeletedException e) {
+            log.info("Resume deleted during analysis, aborting - resumeId={}", resumeId);
         } catch (TextExtractionException e) {
-            log.warn("Text extraction failed for resumeId={}: {}", resume.getId(), e.getMessage());
-            resume.markFailed(e.getMessage(), LocalDateTime.now());
-            resumeRepository.save(resume);
-            notificationCreationService.notifyFailure(resume);
+            log.warn("Text extraction failed for resumeId={}: {}", resumeId, e.getMessage());
+            failQuietly(resumeId, e.getMessage());
         } catch (Exception e) {
-            log.error("Analysis failed for resumeId={}", resume.getId(), e);
-            resume.markFailed("분석 중 오류가 발생했습니다.", LocalDateTime.now());
-            resumeRepository.save(resume);
-            notificationCreationService.notifyFailure(resume);
+            log.error("Analysis failed for resumeId={}", resumeId, e);
+            failQuietly(resumeId, "분석 중 오류가 발생했습니다.");
         }
     }
+
+    private void failQuietly(Long resumeId, String reason) {
+        transactionRunner.updateIfPresent(resumeId, resume -> {
+            resume.markFailed(reason, LocalDateTime.now());
+            notificationCreationService.notifyFailure(resume);
+        });
+    }
+
+    private record ResumeSource(String storageKey, String mimeType) {}
 }

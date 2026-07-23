@@ -1,5 +1,6 @@
 package com.example.tech_interview_buddy.app.service.resume
 
+import com.example.tech_interview_buddy.app.config.AwsS3Properties
 import com.example.tech_interview_buddy.app.config.S3RequestFactory
 import org.springframework.web.multipart.MultipartFile
 import software.amazon.awssdk.core.sync.RequestBody
@@ -9,6 +10,7 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectResponse
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.amazon.awssdk.services.s3.model.S3Exception
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -16,9 +18,16 @@ class ResumeStorageServiceSpec extends Specification {
 
     S3Client s3Client = Mock()
     S3RequestFactory s3RequestFactory = Mock()
+    S3Presigner s3Presigner = Mock()
+    AwsS3Properties awsS3Properties = Stub()
 
     @Subject
-    ResumeStorageService service = new ResumeStorageService(s3RequestFactory, s3Client)
+    ResumeStorageService service = new ResumeStorageService(
+            s3RequestFactory,
+            s3Client,
+            s3Presigner,
+            awsS3Properties
+    )
 
     // === buildStorageKey ===
 
@@ -56,7 +65,7 @@ class ResumeStorageServiceSpec extends Specification {
             getInputStream() >> new ByteArrayInputStream(new byte[1024])
         }
         s3RequestFactory.putRequest("resumes/1/10/resume.pdf", "application/pdf", 1024L) >>
-            PutObjectRequest.builder().bucket("test-bucket").key("resumes/1/10/resume.pdf").build()
+                PutObjectRequest.builder().bucket("test-bucket").key("resumes/1/10/resume.pdf").build()
 
         when:
         service.uploadFile(file, "resumes/1/10/resume.pdf")
@@ -73,7 +82,7 @@ class ResumeStorageServiceSpec extends Specification {
             getInputStream() >> new ByteArrayInputStream(new byte[1024])
         }
         s3RequestFactory.putRequest("resumes/1/10/resume.pdf", "application/pdf", 1024L) >>
-            PutObjectRequest.builder().bucket("test-bucket").key("resumes/1/10/resume.pdf").build()
+                PutObjectRequest.builder().bucket("test-bucket").key("resumes/1/10/resume.pdf").build()
         s3Client.putObject(_ as PutObjectRequest, _ as RequestBody) >> {
             throw S3Exception.builder().message("S3 error").build()
         }
@@ -91,7 +100,7 @@ class ResumeStorageServiceSpec extends Specification {
     def "deleteFile - S3에서 파일을 정상적으로 삭제한다"() {
         given:
         s3RequestFactory.deleteRequest("resumes/1/10/resume.pdf") >>
-            DeleteObjectRequest.builder().bucket("test-bucket").key("resumes/1/10/resume.pdf").build()
+                DeleteObjectRequest.builder().bucket("test-bucket").key("resumes/1/10/resume.pdf").build()
 
         when:
         service.deleteFile("resumes/1/10/resume.pdf")
@@ -103,7 +112,7 @@ class ResumeStorageServiceSpec extends Specification {
     def "deleteFile - S3 삭제 실패 시 IllegalStateException을 던진다"() {
         given:
         s3RequestFactory.deleteRequest("resumes/1/10/resume.pdf") >>
-            DeleteObjectRequest.builder().bucket("test-bucket").key("resumes/1/10/resume.pdf").build()
+                DeleteObjectRequest.builder().bucket("test-bucket").key("resumes/1/10/resume.pdf").build()
         s3Client.deleteObject(_ as DeleteObjectRequest) >> {
             throw S3Exception.builder().message("S3 error").build()
         }

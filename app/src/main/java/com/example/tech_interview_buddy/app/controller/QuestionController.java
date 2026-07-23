@@ -8,10 +8,11 @@ import com.example.tech_interview_buddy.app.dto.response.QuestionDetailResponse;
 import com.example.tech_interview_buddy.app.dto.response.QuestionListResponse;
 import com.example.tech_interview_buddy.app.dto.response.QuestionSearchResponse;
 import com.example.tech_interview_buddy.app.mapper.QuestionMapper;
+import com.example.tech_interview_buddy.app.service.QuestionSearchFacade;
+import com.example.tech_interview_buddy.app.service.QuestionSearchWithRecommendResult;
 import com.example.tech_interview_buddy.domain.service.QuestionService;
 import com.example.tech_interview_buddy.domain.service.QuestionSearchResult;
 import com.example.tech_interview_buddy.domain.service.QuestionWithAnswer;
-import com.example.tech_interview_buddy.domain.service.QuestionSearchWithRecommendResult;
 import com.example.tech_interview_buddy.domain.spec.QuestionSearchSpec;
 import com.example.tech_interview_buddy.domain.User;
 import com.example.tech_interview_buddy.app.dto.enums.SortDirection;
@@ -30,6 +31,7 @@ import java.util.List;
 public class QuestionController {
 
     private final QuestionService questionService;
+    private final QuestionSearchFacade questionSearchFacade;
     private final QuestionMapper questionMapper;
 
     @PostMapping("/search")
@@ -39,7 +41,7 @@ public class QuestionController {
         QuestionSearchSpec spec = toSpec(searchRequest);
         
         QuestionSearchWithRecommendResult result =
-            questionService.searchQuestionsWithRecommend(
+            questionSearchFacade.searchQuestionsWithRecommend(
                 spec,
                 currentUserId,
                 searchRequest.getCategory(),
@@ -115,7 +117,7 @@ public class QuestionController {
         com.example.tech_interview_buddy.domain.Question question = 
             questionService.createQuestion(request.getContent(), request.getCategory());
         
-        RecommendResponse recommendResponse = questionService.getRecommendResponse(
+        RecommendResponse recommendResponse = questionSearchFacade.getRecommendResponse(
             request.getCategory(),
             request.getTags()
         );

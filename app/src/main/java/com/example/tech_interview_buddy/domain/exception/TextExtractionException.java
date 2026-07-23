@@ -1,4 +1,4 @@
-package com.example.tech_interview_buddy.app.service.resume;
+package com.example.tech_interview_buddy.domain.exception;
 
 public class TextExtractionException extends RuntimeException {
 

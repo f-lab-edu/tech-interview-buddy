@@ -1,6 +1,8 @@
 package com.example.tech_interview_buddy.domain.service;
 
 import com.example.tech_interview_buddy.domain.Answer;
+import com.example.tech_interview_buddy.domain.exception.ResourceAccessDeniedException;
+import com.example.tech_interview_buddy.domain.exception.ResourceNotFoundException;
 import com.example.tech_interview_buddy.domain.Question;
 import com.example.tech_interview_buddy.domain.User;
 import com.example.tech_interview_buddy.domain.repository.AnswerRepository;
@@ -35,10 +37,10 @@ public class AnswerService {
     @Transactional
     public Answer createAnswer(Long questionId, Long userId, String content) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new IllegalArgumentException("Question not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
         Answer answer = Answer.builder()
                 .question(question)
@@ -56,10 +58,10 @@ public class AnswerService {
     @Transactional
     public Answer updateAnswer(Long answerId, Long userId, String content) {
         Answer answer = answerRepository.findById(answerId)
-                .orElseThrow(() -> new IllegalArgumentException("Answer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Answer not found"));
 
         if (!answer.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("You can only update your own answer");
+            throw new ResourceAccessDeniedException("You can only update your own answer");
         }
 
         answer.updateContent(content);
@@ -69,10 +71,10 @@ public class AnswerService {
     @Transactional
     public void deleteAnswer(Long answerId, Long userId) {
         Answer answer = answerRepository.findById(answerId)
-                .orElseThrow(() -> new IllegalArgumentException("Answer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Answer not found"));
 
         if (!answer.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("You can only delete your own answer");
+            throw new ResourceAccessDeniedException("You can only delete your own answer");
         }
 
         answerRepository.delete(answer);

@@ -21,7 +21,7 @@ public class S3RequestFactory {
             .build();
     }
 
-    public GetObjectRequest getRequest(String key) {
+    public GetObjectRequest createRequest(String key) {
         return GetObjectRequest.builder()
             .bucket(properties.getBucketName())
             .key(key)

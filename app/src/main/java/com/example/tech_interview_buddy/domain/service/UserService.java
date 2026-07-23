@@ -2,6 +2,8 @@ package com.example.tech_interview_buddy.domain.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
+import com.example.tech_interview_buddy.domain.exception.DuplicateResourceException;
+import com.example.tech_interview_buddy.domain.exception.ResourceNotFoundException;
 import com.example.tech_interview_buddy.domain.repository.UserRepository;
 import com.example.tech_interview_buddy.domain.User;
 import com.example.tech_interview_buddy.domain.UserRole;
@@ -35,19 +37,19 @@ public class UserService {
         try {
             return userRepository.save(user);
         } catch (DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("Username or email already exists");
+            throw new DuplicateResourceException("Username or email already exists");
         }
     }
     
     public User findByUsernameOrEmail(String identifier) {
         return userRepository.findByUsername(identifier)
                 .or(() -> userRepository.findByEmail(identifier))
-                .orElseThrow(() -> new IllegalArgumentException("User not found with username/email: " + identifier));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username/email: " + identifier));
     }
     
     public User findById(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
     }
 
     /**

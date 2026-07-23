@@ -127,6 +127,10 @@ public class Resume {
         this.summarizedText = summarizedText;
     }
 
+    public void saveMarkdown(String markdown) {
+        this.summarizedText = markdown;
+    }
+
     public void saveReviewResult(String reviewData, String reviewSummary) {
         this.reviewData = reviewData;
         this.reviewSummary = reviewSummary;

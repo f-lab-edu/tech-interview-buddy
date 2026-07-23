@@ -48,7 +48,7 @@ public class ResumeStorageService {
 
     public InputStream downloadFile(String storageKey) {
         try {
-            GetObjectRequest request = s3RequestFactory.getRequest(storageKey);
+            GetObjectRequest request = s3RequestFactory.createRequest(storageKey);
             return s3Client.getObject(request);
         } catch (S3Exception e) {
             log.error("Failed to download resume from S3 - key: {}", storageKey, e);
@@ -59,7 +59,7 @@ public class ResumeStorageService {
     public String generatePresignedUrl(String storageKey) {
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
             .signatureDuration(Duration.ofMinutes(awsS3Properties.getPresignedUrlExpirationMinutes()))
-            .getObjectRequest(s3RequestFactory.getRequest(storageKey))
+            .getObjectRequest(s3RequestFactory.createRequest(storageKey))
             .build();
         return s3Presigner.presignGetObject(presignRequest).url().toString();
     }

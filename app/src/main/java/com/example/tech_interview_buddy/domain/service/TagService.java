@@ -1,6 +1,7 @@
 package com.example.tech_interview_buddy.domain.service;
 
 import com.example.tech_interview_buddy.domain.Tag;
+import com.example.tech_interview_buddy.domain.exception.ResourceNotFoundException;
 import com.example.tech_interview_buddy.domain.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,7 @@ public class TagService {
     
     public Tag findById(Long id) {
         return tagRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Tag not found with id: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Tag not found with id: " + id));
     }
     
     public Optional<Tag> findByName(String name) {

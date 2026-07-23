@@ -25,7 +25,8 @@ public class ResumeUploadService {
     @Transactional
     public ResumeUploadResponse upload(User user, MultipartFile file) {
         fileValidator.validate(file);
-        fileValidator.validateResumeCount(resumeRepository.countByUserId(user.getId()));
+        long resumeCount = resumeRepository.countByUserId(user.getId());
+        fileValidator.validateResumeCount(resumeCount);
 
         Resume resume = resumeRepository.save(
             Resume.createUploaded(

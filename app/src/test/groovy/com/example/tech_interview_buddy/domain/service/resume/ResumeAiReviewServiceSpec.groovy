@@ -1,8 +1,8 @@
 package com.example.tech_interview_buddy.domain.service.resume
 
-import com.example.tech_interview_buddy.domain.repository.resume.ResumeRepository
-import com.example.tech_interview_buddy.domain.resume.Resume
+import com.example.tech_interview_buddy.domain.exception.ResumeAiReviewException
 import com.example.tech_interview_buddy.domain.service.ai.AiAdapter
+import com.example.tech_interview_buddy.domain.service.ai.AiJsonClient
 import com.fasterxml.jackson.databind.ObjectMapper
 import spock.lang.Specification
 import spock.lang.Subject
@@ -11,12 +11,12 @@ class ResumeAiReviewServiceSpec extends Specification {
 
     AiAdapter aiAdapter = Mock()
     ResumeReviewPromptTemplate promptTemplate = Mock()
-    ResumeRepository resumeRepository = Mock()
     ObjectMapper objectMapper = new ObjectMapper()
+    AiJsonClient aiJsonClient = new AiJsonClient(aiAdapter, objectMapper)
 
     @Subject
     ResumeAiReviewService service = new ResumeAiReviewService(
-            aiAdapter, promptTemplate, objectMapper, resumeRepository
+            aiJsonClient, promptTemplate, objectMapper
     )
 
     static final String VALID_JSON = """
@@ -42,40 +42,28 @@ class ResumeAiReviewServiceSpec extends Specification {
         }
     """
 
-    def makeResume(String extractedText = "이력서 본문") {
-        def resume = Mock(Resume)
-        resume.getId() >> 1L
-        resume.getExtractedText() >> extractedText
-        return resume
-    }
+    // === generate 성공 케이스 ===
 
-    // === generateAndSave 성공 케이스 ===
-
-    def "AI가 유효한 JSON을 반환하면 파싱 후 Resume에 저장한다"() {
+    def "AI가 유효한 JSON을 반환하면 파싱해 리뷰 JSON과 요약을 반환한다"() {
         given:
-        def resume = makeResume()
         promptTemplate.buildPrompt(_) >> "prompt"
         aiAdapter.sendPrompt(_) >> VALID_JSON
 
         when:
-        service.generateAndSave(resume)
+        def result = service.generate("이력서 본문")
 
         then:
-        1 * resume.saveReviewResult(
-                { it.contains("전반적으로") },
-                "전반적으로 잘 작성된 이력서입니다."
-        )
-        1 * resumeRepository.save(resume)
+        result.reviewJson().contains("전반적으로")
+        result.summary() == "전반적으로 잘 작성된 이력서입니다."
     }
 
     def "extractedText를 프롬프트에 사용한다"() {
         given:
-        def resume = makeResume("이력서 본문 텍스트")
         promptTemplate.buildPrompt("이력서 본문 텍스트") >> "prompt"
         aiAdapter.sendPrompt(_) >> VALID_JSON
 
         when:
-        service.generateAndSave(resume)
+        service.generate("이력서 본문 텍스트")
 
         then:
         1 * promptTemplate.buildPrompt("이력서 본문 텍스트")
@@ -83,59 +71,52 @@ class ResumeAiReviewServiceSpec extends Specification {
 
     // === 재시도 케이스 ===
 
-    def "첫 번째 AI 응답 파싱 실패 시 1회 재시도 후 성공하면 저장한다"() {
+    def "첫 번째 AI 응답 파싱 실패 시 1회 재시도 후 성공하면 반환한다"() {
         given:
-        def resume = makeResume()
         promptTemplate.buildPrompt(_) >> "prompt"
 
         when:
-        service.generateAndSave(resume)
+        def result = service.generate("이력서 본문")
 
         then:
         2 * aiAdapter.sendPrompt(_) >>> ["invalid json", VALID_JSON]
-        1 * resume.saveReviewResult(_, _)
-        1 * resumeRepository.save(resume)
+        result.summary() == "전반적으로 잘 작성된 이력서입니다."
     }
 
-    def "AI 응답이 null일 때 1회 재시도 후 성공하면 저장한다"() {
+    def "AI 응답이 null일 때 1회 재시도 후 성공하면 반환한다"() {
         given:
-        def resume = makeResume()
         promptTemplate.buildPrompt(_) >> "prompt"
 
         when:
-        service.generateAndSave(resume)
+        def result = service.generate("이력서 본문")
 
         then:
         2 * aiAdapter.sendPrompt(_) >>> [null, VALID_JSON]
-        1 * resume.saveReviewResult(_, _)
+        result.reviewJson() != null
     }
 
     // === 실패 케이스 ===
 
     def "두 번 모두 파싱 실패하면 ResumeAiReviewException을 던진다"() {
         given:
-        def resume = makeResume()
         promptTemplate.buildPrompt(_) >> "prompt"
         aiAdapter.sendPrompt(_) >> "invalid json"
 
         when:
-        service.generateAndSave(resume)
+        service.generate("이력서 본문")
 
         then:
         thrown(ResumeAiReviewException)
         2 * aiAdapter.sendPrompt(_)
-        0 * resume.saveReviewResult(_, _)
-        0 * resumeRepository.save(_)
     }
 
     def "두 번 모두 null 응답이면 ResumeAiReviewException을 던진다"() {
         given:
-        def resume = makeResume()
         promptTemplate.buildPrompt(_) >> "prompt"
         aiAdapter.sendPrompt(_) >> null
 
         when:
-        service.generateAndSave(resume)
+        service.generate("이력서 본문")
 
         then:
         thrown(ResumeAiReviewException)
@@ -144,21 +125,16 @@ class ResumeAiReviewServiceSpec extends Specification {
 
     // === JSON 파싱 검증 ===
 
-    def "파싱된 리뷰에 strengths, weaknesses, suggestions, atsChecklist가 포함된다"() {
+    def "파싱된 리뷰 JSON에 strengths, weaknesses, suggestions, atsChecklist가 포함된다"() {
         given:
-        def resume = makeResume()
         promptTemplate.buildPrompt(_) >> "prompt"
         aiAdapter.sendPrompt(_) >> VALID_JSON
 
-        String capturedReviewJson = null
-        resume.saveReviewResult(_, _) >> { args -> capturedReviewJson = args[0] }
-
         when:
-        service.generateAndSave(resume)
+        def result = service.generate("이력서 본문")
 
         then:
-        capturedReviewJson != null
-        def parsed = objectMapper.readValue(capturedReviewJson, Map)
+        def parsed = objectMapper.readValue(result.reviewJson(), Map)
         parsed.strengths.size() == 1
         parsed.weaknesses.size() == 1
         parsed.suggestions.size() == 1
@@ -168,14 +144,13 @@ class ResumeAiReviewServiceSpec extends Specification {
 
     def "JSON 앞뒤에 마크다운 코드블록이 있어도 파싱에 성공한다"() {
         given:
-        def resume = makeResume()
         promptTemplate.buildPrompt(_) >> "prompt"
         aiAdapter.sendPrompt(_) >> "```json\n${VALID_JSON}\n```"
 
         when:
-        service.generateAndSave(resume)
+        def result = service.generate("이력서 본문")
 
         then:
-        1 * resume.saveReviewResult(_, "전반적으로 잘 작성된 이력서입니다.")
+        result.summary() == "전반적으로 잘 작성된 이력서입니다."
     }
 }

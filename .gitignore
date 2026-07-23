@@ -35,3 +35,17 @@ out/
 .env
 .env.local
 .env.*.local
+
+### OS / Build artifacts ###
+.DS_Store
+bin/
+logs/
+
+### Editor / AI tool dirs ###
+.history/
+.claude/
+.codex/
+.cursor/
+.agents/
+*.swp
+*.swo

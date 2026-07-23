@@ -1,6 +1,7 @@
 package com.example.tech_interview_buddy.domain.service;
 
 import com.example.tech_interview_buddy.domain.Answer;
+import com.example.tech_interview_buddy.domain.exception.ResourceNotFoundException;
 import com.example.tech_interview_buddy.domain.Question;
 import com.example.tech_interview_buddy.domain.repository.AnswerRepository;
 import com.example.tech_interview_buddy.domain.service.ai.AiAdapter;
@@ -47,7 +48,7 @@ public class AnswerEvaluationService {
 
         if (feedback != null) {
             Answer answer = answerRepository.findById(answerId)
-                    .orElseThrow(() -> new IllegalArgumentException("Answer not found with id: " + answerId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Answer not found with id: " + answerId));
 
             answer.updateEvaluation(feedback);
             answerRepository.save(answer);

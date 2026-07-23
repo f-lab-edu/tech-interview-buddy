@@ -1,5 +1,6 @@
 package com.example.tech_interview_buddy.app.service.resume
 
+import com.example.tech_interview_buddy.domain.exception.TextExtractionException
 import spock.lang.Specification
 import spock.lang.Subject
 

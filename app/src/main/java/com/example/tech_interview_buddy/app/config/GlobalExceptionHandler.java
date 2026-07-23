@@ -1,6 +1,9 @@
 package com.example.tech_interview_buddy.app.config;
 
 import com.example.tech_interview_buddy.app.dto.response.ErrorResponse;
+import com.example.tech_interview_buddy.domain.exception.DuplicateResourceException;
+import com.example.tech_interview_buddy.domain.exception.ResourceAccessDeniedException;
+import com.example.tech_interview_buddy.domain.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -44,6 +47,39 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(
             HttpStatus.CONFLICT,
             "Data integrity violation",
+            request,
+            null
+        );
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
+        return buildErrorResponse(
+            HttpStatus.NOT_FOUND,
+            ex.getMessage(),
+            request,
+            null
+        );
+    }
+
+    @ExceptionHandler(ResourceAccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse handleAccessDenied(ResourceAccessDeniedException ex, HttpServletRequest request) {
+        return buildErrorResponse(
+            HttpStatus.FORBIDDEN,
+            ex.getMessage(),
+            request,
+            null
+        );
+    }
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleDuplicate(DuplicateResourceException ex, HttpServletRequest request) {
+        return buildErrorResponse(
+            HttpStatus.CONFLICT,
+            ex.getMessage(),
             request,
             null
         );
