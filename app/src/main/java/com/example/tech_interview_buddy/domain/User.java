@@ -49,14 +49,6 @@ public class User {
     private Company company;
 
     @Builder
-    public User(String username, String password, String email) {
-        this.username = username;
-        this.password = password;
-        this.email = email;
-        this.role = UserRole.USER;
-    }
-    
-    @Builder
     public User(String username, String password, String email, UserRole role) {
         this.username = username;
         this.password = password;
