@@ -50,7 +50,7 @@ public class RecruiterRequestService {
 
     public List<RecruiterRequest> findByStatus(RecruiterRequestStatus status) {
         if (status == null) {
-            return recruiterRequestRepository.findAll();
+            return recruiterRequestRepository.findAllBy();
         }
         return recruiterRequestRepository.findByStatusOrderByCreatedAtAsc(status);
     }
