@@ -1,12 +1,16 @@
 package com.example.tech_interview_buddy.domain;
 
+import com.example.tech_interview_buddy.domain.recruit.Company;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
@@ -39,6 +43,11 @@ public class User {
     @Column(nullable = false)
     private UserRole role = UserRole.USER;
 
+    /** 채용담당자(RECRUITER)의 소속 회사. 일반 사용자는 null. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
+
     @Builder
     public User(String username, String password, String email) {
         this.username = username;
@@ -57,5 +66,11 @@ public class User {
 
     public void updateRole(UserRole role) {
         this.role = role;
+    }
+
+    /** 채용담당자 승인: 역할 변경과 회사 배정을 함께 수행한다. */
+    public void promoteToRecruiter(Company company) {
+        this.role = UserRole.RECRUITER;
+        this.company = company;
     }
 }
