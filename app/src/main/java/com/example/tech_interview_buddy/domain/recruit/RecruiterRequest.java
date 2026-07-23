@@ -1,6 +1,8 @@
 package com.example.tech_interview_buddy.domain.recruit;
 
 import com.example.tech_interview_buddy.domain.User;
+import com.example.tech_interview_buddy.domain.exception.InvalidStateException;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -78,7 +80,7 @@ public class RecruiterRequest {
 
     private void requirePending() {
         if (this.status != RecruiterRequestStatus.PENDING) {
-            throw new IllegalArgumentException("이미 처리된 신청입니다.");
+            throw new InvalidStateException("이미 처리된 신청입니다.");
         }
     }
 }

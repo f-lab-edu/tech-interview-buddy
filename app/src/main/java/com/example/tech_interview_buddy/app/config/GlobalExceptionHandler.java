@@ -2,6 +2,7 @@ package com.example.tech_interview_buddy.app.config;
 
 import com.example.tech_interview_buddy.app.dto.response.ErrorResponse;
 import com.example.tech_interview_buddy.domain.exception.DuplicateResourceException;
+import com.example.tech_interview_buddy.domain.exception.InvalidStateException;
 import com.example.tech_interview_buddy.domain.exception.ResourceAccessDeniedException;
 import com.example.tech_interview_buddy.domain.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -81,6 +82,17 @@ public class GlobalExceptionHandler {
             HttpStatus.CONFLICT,
             ex.getMessage(),
             request,
+            null
+        );
+    }
+
+    @ExceptionHandler(InvalidStateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleInvalidState(InvalidStateException ex, HttpServletRequest request) {
+        return buildErrorResponse(
+            HttpStatus.CONFLICT,
+            ex.getMessage(), 
+            request, 
             null
         );
     }
