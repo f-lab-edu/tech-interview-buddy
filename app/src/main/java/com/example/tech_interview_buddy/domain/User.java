@@ -60,9 +60,14 @@ public class User {
         this.role = role;
     }
 
-    /** 채용담당자 승인: 역할 변경과 회사 배정을 함께 수행한다. */
     public void promoteToRecruiter(Company company) {
         this.role = UserRole.RECRUITER;
         this.company = company;
     }
+
+    public void demoteToUser() {
+        this.role = UserRole.USER;
+        this.company = null;
+    }
+
 }

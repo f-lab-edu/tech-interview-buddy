@@ -6,6 +6,8 @@ import com.example.tech_interview_buddy.domain.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,5 +33,17 @@ public class AdminUserController {
                 .role(user.getRole())
                 .build())
             .collect(Collectors.toList());
+    }
+
+    @PatchMapping("/users/{userId}/revoke-recruiter")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserResponse revokeRecruiter(@PathVariable Long userId) {
+        User user = userService.revokeRecruiter(userId);
+        return UserResponse.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .role(user.getRole())
+                    .build();
     }
 }

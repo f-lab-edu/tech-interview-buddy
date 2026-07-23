@@ -3,14 +3,15 @@ package com.example.tech_interview_buddy.domain.service;
 import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
 import com.example.tech_interview_buddy.domain.exception.DuplicateResourceException;
+import com.example.tech_interview_buddy.domain.exception.InvalidStateException;
 import com.example.tech_interview_buddy.domain.exception.ResourceNotFoundException;
 import com.example.tech_interview_buddy.domain.repository.UserRepository;
 import com.example.tech_interview_buddy.domain.User;
 import com.example.tech_interview_buddy.domain.UserRole;
 import com.example.tech_interview_buddy.common.security.PasswordEncoder;
 import jakarta.transaction.Transactional;
+
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Domain 서비스: User 도메인 로직
@@ -71,6 +72,16 @@ public class UserService {
     public User revokeAdminRole(Long userId) {
         User user = findById(userId);
         user.updateRole(UserRole.USER);
+        return user;
+    }
+
+    @Transactional
+    public User revokeRecruiter(Long userId) {
+        User user = findById(userId);
+        if (user.getRole() != UserRole.RECRUITER) {
+            throw new InvalidStateException("해당 사용자는 채용담당자가 아닙니다.");
+        }
+        user.demoteToUser();
         return user;
     }
 
